@@ -8,7 +8,7 @@ Agent Engine is a web app that transforms real estate listing data and professio
 - **Styling:** Tailwind CSS
 - **Auth & Database:** Supabase (PostgreSQL + Auth + Storage)
 - **AI Text:** Claude Haiku API (captions, hashtags)
-- **Image Branding:** Bannerbear (branded overlays for posts & stories)
+- **Image Branding:** Custom HTML-to-image (Sharp + @vercel/og or Puppeteer)
 - **Video Generation:** Runway (image-to-video clips)
 - **Video Processing:** FFmpeg / Transloadit (stitching, transitions, audio)
 - **Payments:** Stripe Checkout
@@ -81,6 +81,7 @@ src/
 - Skip Stripe for payments — no custom payment handling
 - Store credit card data — Stripe handles PCI compliance
 - Expose cost_logs to users — internal COGS tracking only
+- Use paid image generation APIs (Bannerbear, Placid, etc.) — we build branded images in-house
 
 ## Current Status
 
