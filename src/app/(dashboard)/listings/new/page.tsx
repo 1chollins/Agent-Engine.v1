@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { checkBrandProfileComplete } from "@/lib/brand-profile-check";
+import { NewListingWizard } from "@/components/listing/new-listing-wizard";
 
 export default async function NewListingPage() {
   const supabase = createClient();
@@ -14,7 +15,7 @@ export default async function NewListingPage() {
   if (!result.complete) {
     return (
       <div className="mx-auto max-w-lg text-center">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-black">
           Complete Your Brand Profile First
         </h1>
         <p className="mt-3 text-gray-600">
@@ -38,13 +39,13 @@ export default async function NewListingPage() {
     );
   }
 
-  // Placeholder for future listing submission form
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-3xl font-bold text-gray-900">New Listing</h1>
-      <p className="mt-3 text-gray-600">
-        Listing submission form coming soon.
+    <div className="mx-auto max-w-3xl">
+      <h1 className="mb-2 text-3xl font-bold text-black">New Listing</h1>
+      <p className="mb-8 text-gray-600">
+        Enter your property details and upload photos to generate your content package.
       </p>
+      <NewListingWizard userId={user.id} />
     </div>
   );
 }
