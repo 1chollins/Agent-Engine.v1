@@ -50,7 +50,7 @@ export function PhotoUpload({
 
       const tooLarge = fileArray.filter((f) => f.size > MAX_PHOTO_SIZE);
       if (tooLarge.length > 0) {
-        setError(`${tooLarge.length} file(s) exceed 10MB limit`);
+        setError(`${tooLarge.length} file(s) exceed 25MB limit`);
         return;
       }
 
@@ -216,7 +216,7 @@ export function PhotoUpload({
           Drag & drop photos here or click to browse
         </p>
         <p className="mt-1 text-xs text-gray-500">
-          JPG, PNG, HEIC — max 10MB each — {MIN_PHOTOS}–{MAX_PHOTOS} photos required
+          JPG, PNG, HEIC — max 25MB each — {MIN_PHOTOS}–{MAX_PHOTOS} photos required
         </p>
         {uploading && (
           <p className="mt-2 text-xs text-sage-darker">Uploading...</p>

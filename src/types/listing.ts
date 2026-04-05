@@ -69,4 +69,4 @@ export type ListingFormState = {
 
 export const MIN_PHOTOS = 10;
 export const MAX_PHOTOS = 30;
-export const MAX_PHOTO_SIZE = 10 * 1024 * 1024; // 10MB
+export const MAX_PHOTO_SIZE = 25 * 1024 * 1024; // 25MB
