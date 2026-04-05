@@ -85,7 +85,7 @@ src/
 
 ## Current Status
 
-Sprint Spike (API validation) — not yet started. No code has been written.
+Sprint 0 in progress. AE-001 (project scaffold) complete. AE-002–AE-006 pending external setup (Supabase, Vercel, Stripe).
 
 ## Reference Docs
 

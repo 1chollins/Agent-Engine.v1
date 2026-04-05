@@ -13,6 +13,9 @@ out/
 # vercel
 .vercel
 
+# spike output
+spikes/output/
+
 # misc
 .DS_Store
 *.tsbuildinfo
