@@ -8,6 +8,8 @@ type FormFieldProps = {
   required?: boolean;
   minLength?: number;
   autoComplete?: string;
+  defaultValue?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
 export function FormField({
@@ -18,6 +20,8 @@ export function FormField({
   required,
   minLength,
   autoComplete,
+  defaultValue,
+  onChange,
 }: FormFieldProps) {
   return (
     <div className="space-y-1.5">
@@ -32,6 +36,8 @@ export function FormField({
         required={required}
         minLength={minLength}
         autoComplete={autoComplete}
+        defaultValue={defaultValue}
+        onChange={onChange}
         className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       />
     </div>

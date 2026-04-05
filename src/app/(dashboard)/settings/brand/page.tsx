@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BrandProfileForm } from "@/components/brand/brand-profile-form";
 
-export default async function OnboardingPage() {
+export default async function EditBrandProfilePage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -14,20 +14,18 @@ export default async function OnboardingPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // If profile is already complete, go to dashboard
-  if (profile?.is_complete) redirect("/dashboard");
+  // If no profile exists, redirect to onboarding
+  if (!profile) redirect("/onboarding");
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Complete Your Brand Profile
-        </h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Edit Brand Profile</h1>
         <p className="mt-3 text-gray-600">
-          Set up your brand identity to start generating content for your listings.
+          Update your brand identity. Changes apply to future content only.
         </p>
       </div>
-      <BrandProfileForm mode="create" userId={user.id} initialData={profile} />
+      <BrandProfileForm mode="edit" userId={user.id} initialData={profile} />
     </div>
   );
 }

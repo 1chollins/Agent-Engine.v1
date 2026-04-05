@@ -24,6 +24,9 @@ export default function DashboardLayout({
               <Link href="/content" className="text-sm text-gray-600 hover:text-gray-900">
                 Content
               </Link>
+              <Link href="/settings/brand" className="text-sm text-gray-600 hover:text-gray-900">
+                Settings
+              </Link>
             </nav>
           </div>
           <LogoutButton />
