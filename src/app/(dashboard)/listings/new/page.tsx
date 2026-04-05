@@ -30,7 +30,7 @@ export default async function NewListingPage() {
         </ul>
         <Link
           href="/settings/brand"
-          className="mt-6 inline-block rounded-lg bg-black px-6 py-2.5 text-sm font-medium text-cream hover:bg-sage-darker"
+          className="mt-6 inline-block rounded-lg bg-sage px-6 py-2.5 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-sage-dark"
         >
           Complete Brand Profile
         </Link>

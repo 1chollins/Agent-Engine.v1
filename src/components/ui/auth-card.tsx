@@ -7,8 +7,8 @@ type AuthCardProps = {
 export function AuthCard({ title, children, footer }: AuthCardProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-cream px-4">
-      <div className="w-full max-w-md rounded-xl border border-sage/30 bg-white p-8 shadow-sm">
-        <h1 className="mb-6 text-center text-2xl font-semibold text-gray-900">
+      <div className="w-full max-w-md rounded-2xl border border-sage/20 bg-white p-10 shadow-md">
+        <h1 className="mb-8 text-center text-2xl font-bold text-black">
           {title}
         </h1>
         {children}

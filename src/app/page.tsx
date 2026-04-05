@@ -10,13 +10,13 @@ export default function LandingPage() {
       <div className="mt-8 flex gap-4">
         <Link
           href="/register"
-          className="rounded-lg bg-black px-6 py-2.5 text-sm font-medium text-cream hover:bg-sage-darker"
+          className="rounded-lg bg-sage px-6 py-2.5 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-sage-dark"
         >
           Get Started
         </Link>
         <Link
           href="/login"
-          className="rounded-lg border border-black px-6 py-2.5 text-sm font-medium text-black hover:bg-sage/20"
+          className="rounded-lg border border-sage px-6 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-sage/20"
         >
           Sign In
         </Link>
