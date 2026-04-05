@@ -7,24 +7,24 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
+    <div className="min-h-screen bg-cream">
+      <header className="border-b border-sage/20 bg-black">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="text-lg font-semibold text-gray-900">
+            <Link href="/dashboard" className="text-lg font-semibold text-cream">
               Agent Engine
             </Link>
             <nav className="hidden items-center gap-6 sm:flex">
-              <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
+              <Link href="/dashboard" className="text-sm text-sage hover:text-cream">
                 Dashboard
               </Link>
-              <Link href="/listings" className="text-sm text-gray-600 hover:text-gray-900">
+              <Link href="/listings" className="text-sm text-sage hover:text-cream">
                 Listings
               </Link>
-              <Link href="/content" className="text-sm text-gray-600 hover:text-gray-900">
+              <Link href="/content" className="text-sm text-sage hover:text-cream">
                 Content
               </Link>
-              <Link href="/settings/brand" className="text-sm text-gray-600 hover:text-gray-900">
+              <Link href="/settings/brand" className="text-sm text-sage hover:text-cream">
                 Settings
               </Link>
             </nav>

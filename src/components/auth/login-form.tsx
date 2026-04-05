@@ -23,7 +23,7 @@ export function LoginForm({ message }: LoginFormProps) {
       footer={
         <>
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+          <Link href="/register" className="font-medium text-black underline hover:text-sage-darker">
             Create one
           </Link>
         </>
@@ -53,7 +53,7 @@ export function LoginForm({ message }: LoginFormProps) {
         <div className="flex justify-end">
           <Link
             href="/reset-password"
-            className="text-sm text-blue-600 hover:text-blue-500"
+            className="text-sm text-black underline hover:text-sage-darker"
           >
             Forgot password?
           </Link>

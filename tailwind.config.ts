@@ -9,6 +9,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        sage: {
+          DEFAULT: "#bcbfaa",
+          dark: "#a8ab98",
+          darker: "#929684",
+        },
+        cream: {
+          DEFAULT: "#fcfae5",
+          dark: "#f5f2d0",
+        },
         background: "var(--background)",
         foreground: "var(--foreground)",
       },

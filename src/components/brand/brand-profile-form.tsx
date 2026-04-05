@@ -88,7 +88,7 @@ export function BrandProfileForm({ mode, userId, initialData }: BrandProfileForm
             name="tone"
             defaultValue={initialData?.tone ?? "professional"}
             required
-            className="mt-1.5 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="mt-1.5 block w-full rounded-lg border border-sage bg-white px-3 py-2.5 text-sm shadow-sm focus:border-sage-darker focus:outline-none focus:ring-1 focus:ring-sage-darker"
           >
             {BRAND_TONES.map((t) => (
               <option key={t.value} value={t.value}>

@@ -27,7 +27,7 @@ export function ColorPicker({
           id={`${name}-picker`}
           value={value || "#000000"}
           onChange={(e) => onChange(e.target.value)}
-          className="h-10 w-10 cursor-pointer rounded border border-gray-300"
+          className="h-10 w-10 cursor-pointer rounded border border-sage"
         />
         <input
           type="text"
@@ -38,7 +38,7 @@ export function ColorPicker({
           placeholder="#000000"
           pattern="^#[0-9A-Fa-f]{6}$"
           required={required}
-          className="block w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="block w-32 rounded-lg border border-sage bg-white px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:border-sage-darker focus:outline-none focus:ring-1 focus:ring-sage-darker"
         />
       </div>
     </div>

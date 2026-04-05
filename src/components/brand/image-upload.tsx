@@ -81,7 +81,7 @@ export function ImageUpload({
       <label className="block text-sm font-medium text-gray-700">{label}</label>
       <div
         onClick={() => inputRef.current?.click()}
-        className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-6 hover:border-gray-400"
+        className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-sage p-6 hover:border-sage-darker"
       >
         {previewSrc ? (
           <Image
@@ -98,7 +98,7 @@ export function ImageUpload({
           </div>
         )}
         {uploading && (
-          <p className="mt-2 text-xs text-blue-600">Uploading...</p>
+          <p className="mt-2 text-xs text-sage-darker">Uploading...</p>
         )}
       </div>
       <input
