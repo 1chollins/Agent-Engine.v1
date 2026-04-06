@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Listing, ListingPhoto } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import { PROPERTY_TYPES, MIN_PHOTOS } from "@/types/listing";
+import { CheckoutButton } from "@/components/listing/checkout-button";
 
 type ReviewPageProps = {
   params: { id: string };
@@ -185,13 +186,7 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
         >
           Back to Editing
         </Link>
-        <button
-          type="button"
-          disabled={!canSubmit}
-          className="rounded-lg bg-sage px-8 py-3 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-sage-dark disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Confirm & Pay
-        </button>
+        <CheckoutButton listingId={params.id} disabled={!canSubmit} />
       </div>
     </div>
   );
