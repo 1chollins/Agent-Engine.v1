@@ -56,19 +56,16 @@ export function PreviewModal({ piece, onClose }: PreviewModalProps) {
   const isPost = piece.content_type === "post";
   const hasAlt = isPost && piece.asset_path_alt;
 
-  function handleDownload() {
-    // Download primary asset
+  function getDownloadUrl(): string {
+    if (isPost && hasAlt && piece.asset_path && piece.asset_path_alt) {
+      // Single ZIP with both IG + FB versions
+      return `/api/download-post?ig=${encodeURIComponent(piece.asset_path)}&fb=${encodeURIComponent(piece.asset_path_alt)}&name=day${dayStr}-post`;
+    }
     if (piece.asset_path) {
       const ext = piece.asset_type === "video" ? "mp4" : "png";
-      const name = isPost ? `day${dayStr}-post-ig-1080x1080.${ext}` : `day${dayStr}-${piece.content_type}.${ext}`;
-      triggerDownload(piece.asset_path, name);
+      return `/api/download?path=${encodeURIComponent(piece.asset_path)}&name=day${dayStr}-${piece.content_type}.${ext}`;
     }
-    // For posts, also download FB variant
-    if (hasAlt && piece.asset_path_alt) {
-      setTimeout(() => {
-        triggerDownload(piece.asset_path_alt!, `day${dayStr}-post-fb-1200x630.png`);
-      }, 500);
-    }
+    return "#";
   }
 
   return (
@@ -91,15 +88,15 @@ export function PreviewModal({ piece, onClose }: PreviewModalProps) {
           </div>
           <div className="flex items-center gap-2 self-end sm:self-auto">
             {piece.asset_path && (
-              <button
-                onClick={handleDownload}
+              <a
+                href={getDownloadUrl()}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-sage px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-sage-dark"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                Download{hasAlt ? " Both" : ""}
-              </button>
+                {hasAlt ? "Download (IG + FB)" : "Download"}
+              </a>
             )}
             <button
               onClick={onClose}
@@ -247,11 +244,3 @@ export function PreviewModal({ piece, onClose }: PreviewModalProps) {
   );
 }
 
-function triggerDownload(path: string, filename: string) {
-  const a = document.createElement("a");
-  a.href = `/api/download?path=${encodeURIComponent(path)}&name=${encodeURIComponent(filename)}`;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
