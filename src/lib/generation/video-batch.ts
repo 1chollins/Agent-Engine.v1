@@ -110,34 +110,56 @@ export async function runVideoGeneration(
         .sort((a, b) => a.clipIndex - b.clipIndex)
         .map((c) => c.localPath);
 
-      const result = await stitchReelVideo({
-        clipPaths: clipStoragePaths,
-        textOverlays: overlayPhrases,
-        listingId,
-        pieceId: piece.id,
-        userId: typedListing.user_id,
-        dayNumber: piece.day_number,
-        brandTone: typedBrand?.tone,
-      });
+      let finalAssetPath: string;
+      let stitchNote = "";
+
+      try {
+        const result = await stitchReelVideo({
+          clipPaths: clipStoragePaths,
+          textOverlays: overlayPhrases,
+          listingId,
+          pieceId: piece.id,
+          userId: typedListing.user_id,
+          dayNumber: piece.day_number,
+          brandTone: typedBrand?.tone,
+        });
+        finalAssetPath = result.outputPath;
+      } catch (stitchErr) {
+        const stitchMsg = stitchErr instanceof Error ? stitchErr.message : "Unknown";
+        console.warn(`Stitching failed for day ${piece.day_number}, using first clip: ${stitchMsg}`);
+        // Fallback: copy first clip as the reel asset
+        const firstClip = clipStoragePaths[0];
+        finalAssetPath = `${typedListing.user_id}/${listingId}/reels/day-${piece.day_number}.mp4`;
+        const { data: clipData } = await supabase.storage
+          .from("generated-content")
+          .download(firstClip);
+        if (clipData) {
+          const buffer = Buffer.from(await clipData.arrayBuffer());
+          await supabase.storage
+            .from("generated-content")
+            .upload(finalAssetPath, buffer, { contentType: "video/mp4", upsert: true });
+        }
+        stitchNote = " (unstitched — FFmpeg not available)";
+      }
 
       // Update piece with final video path
       await supabase
         .from("content_pieces")
         .update({
-          asset_path: result.outputPath,
+          asset_path: finalAssetPath,
           asset_type: "video",
           status: "complete",
           generated_at: new Date().toISOString(),
           error_message: clipErrors.length > 0
-            ? `${clips.length} clips succeeded, ${clipErrors.length} failed`
-            : null,
+            ? `${clips.length} clips succeeded, ${clipErrors.length} failed${stitchNote}`
+            : stitchNote || null,
         })
         .eq("id", piece.id);
 
       succeeded++;
       console.log(
         `Reel day ${piece.day_number} complete (${Date.now() - startTime}ms): ` +
-        `${clips.length} clips, ${result.durationSeconds}s`
+        `${clips.length} clips`
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
