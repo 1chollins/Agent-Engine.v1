@@ -71,9 +71,14 @@ export default async function DashboardPage() {
           <div className="mt-4 space-y-3">
             {typedListings.map((listing) => {
               const status = STATUS_STYLES[listing.status] ?? STATUS_STYLES.draft;
-              const href = listing.status === "draft"
-                ? `/listings/new?draft=${listing.id}`
-                : `/listings/${listing.id}/review`;
+              const href =
+                listing.status === "draft"
+                  ? `/listings/new?draft=${listing.id}`
+                  : listing.status === "complete" || listing.status === "partial_failure"
+                    ? `/listings/${listing.id}/content`
+                    : listing.status === "processing"
+                      ? `/listings/${listing.id}/processing`
+                      : `/listings/${listing.id}/review`;
 
               return (
                 <Link
