@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { ContentCalendar } from "@/components/content/content-calendar";
 import { ListingSelector } from "@/components/content/listing-selector";
 import type { ContentPackage, ContentPiece } from "@/types/content";
-import type { Listing } from "@/types/listing";
 
 type ContentPageProps = {
   params: { id: string };

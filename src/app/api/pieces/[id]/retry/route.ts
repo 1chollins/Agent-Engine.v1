@@ -24,19 +24,21 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const listingUserId = (piece as any).content_packages?.listings?.user_id;
-  if (listingUserId !== user.id) {
+  const pieceData = piece as Record<string, unknown>;
+  const pkgData = pieceData.content_packages as Record<string, unknown> | undefined;
+  const listingsData = pkgData?.listings as Record<string, unknown> | undefined;
+  if (listingsData?.user_id !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if ((piece as any).status !== "failed") {
+  if (pieceData.status !== "failed") {
     return NextResponse.json(
       { error: "Only failed pieces can be retried" },
       { status: 400 }
     );
   }
 
-  if ((piece as any).retry_count >= 2) {
+  if ((pieceData.retry_count as number) >= 2) {
     return NextResponse.json(
       { error: "Max retries reached (2)" },
       { status: 400 }

@@ -20,7 +20,8 @@ export async function GET(
     .eq("id", params.id)
     .single();
 
-  if (!pkg || (pkg as any).listings?.user_id !== user.id) {
+  const pkgListings = (pkg as Record<string, unknown> | null)?.listings as Record<string, unknown> | undefined;
+  if (!pkg || pkgListings?.user_id !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

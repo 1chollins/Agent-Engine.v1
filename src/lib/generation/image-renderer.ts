@@ -26,8 +26,8 @@ async function loadFonts(): Promise<{
   return fontDataCache;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function renderToImage(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   element: any,
   width: number,
   height: number

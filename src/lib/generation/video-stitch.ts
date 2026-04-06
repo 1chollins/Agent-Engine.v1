@@ -2,7 +2,7 @@ import ffmpeg from "fluent-ffmpeg";
 import { createServiceClient } from "@/lib/supabase/server";
 import { selectMusicTrack } from "./music";
 import { join } from "path";
-import { mkdirSync, existsSync, writeFileSync, unlinkSync, readFileSync } from "fs";
+import { mkdirSync, existsSync, writeFileSync, unlinkSync, readFileSync, readdirSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { randomUUID } from "crypto";
 
@@ -207,7 +207,6 @@ export async function stitchReelVideo(
 
 function cleanupDir(dir: string): void {
   try {
-    const { readdirSync, rmSync } = require("fs");
     if (existsSync(dir)) {
       for (const file of readdirSync(dir)) {
         try {

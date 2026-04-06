@@ -323,6 +323,6 @@ async function updatePackageCounts(
         status: status === "complete" ? "complete" : status === "failed" ? "failed" : "partial_failure",
         updated_at: new Date().toISOString(),
       })
-      .eq("id", (pkg as any).listing_id);
+      .eq("id", (pkg as Record<string, unknown>).listing_id as string);
   }
 }

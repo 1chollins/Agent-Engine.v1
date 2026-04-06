@@ -23,11 +23,14 @@ export async function GET(
     .eq("id", params.id)
     .single();
 
-  if (!pkg || (pkg as any).listings?.user_id !== user.id) {
+  const pkgData = pkg as Record<string, unknown> | null;
+  const pkgListings = pkgData?.listings as Record<string, unknown> | undefined;
+
+  if (!pkgData || pkgListings?.user_id !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if ((pkg as any).status === "processing") {
+  if (pkgData.status === "processing") {
     return NextResponse.json(
       { error: "Package is still processing" },
       { status: 400 }
@@ -125,8 +128,7 @@ export async function GET(
     },
   });
 
-  const listing = (pkg as any).listings;
-  const slug = (listing?.address ?? "content")
+  const slug = ((pkgListings?.address as string) ?? "content")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .slice(0, 40);

@@ -33,7 +33,7 @@ const TYPE_LABELS: Record<string, string> = {
   story: "Story",
 };
 
-export function PreviewModal({ piece, onClose, listingAddress }: PreviewModalProps) {
+export function PreviewModal({ piece, onClose }: PreviewModalProps) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
