@@ -4,7 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { checkBrandProfileComplete } from "@/lib/brand-profile-check";
 import { NewListingWizard } from "@/components/listing/new-listing-wizard";
 
-export default async function NewListingPage() {
+type NewListingPageProps = {
+  searchParams: { draft?: string; step?: string };
+};
+
+export default async function NewListingPage({ searchParams }: NewListingPageProps) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -45,7 +49,7 @@ export default async function NewListingPage() {
       <p className="mb-8 text-gray-600">
         Enter your property details and upload photos to generate your content package.
       </p>
-      <NewListingWizard userId={user.id} />
+      <NewListingWizard userId={user.id} initialStep={searchParams.step === "details" ? "details" : undefined} />
     </div>
   );
 }

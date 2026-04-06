@@ -14,8 +14,13 @@ export function createClient() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+          try {
+            for (const { name, value, options } of cookiesToSet) {
+              cookieStore.set(name, value, options);
+            }
+          } catch {
+            // setAll is called from a Server Component where cookies are read-only.
+            // This is safe to ignore — the middleware handles session refresh.
           }
         },
       },

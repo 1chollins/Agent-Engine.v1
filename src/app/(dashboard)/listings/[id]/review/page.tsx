@@ -47,19 +47,31 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
     (t) => t.value === typedListing.property_type
   )?.label;
 
+  // Generate signed URLs for all photos (private bucket)
+  const photosWithUrls = await Promise.all(
+    typedPhotos.map(async (photo) => {
+      const { data } = await supabase.storage
+        .from("listing-photos")
+        .createSignedUrl(photo.file_path, 3600);
+      return { ...photo, signedUrl: data?.signedUrl ?? null };
+    })
+  );
+
+  const heroWithUrl = photosWithUrls.find((p) => p.is_hero) ?? photosWithUrls[0];
+
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-2 text-3xl font-bold text-black">Review Listing</h1>
+      <h1 className="mb-2 text-2xl font-bold text-black sm:text-3xl">Review Listing</h1>
       <p className="mb-8 text-gray-600">
         Review your listing details before proceeding to payment.
       </p>
 
       {/* Property Details */}
-      <section className="rounded-2xl border border-sage/20 bg-white p-8">
+      <section className="rounded-2xl border border-sage/20 bg-white p-6 sm:p-8">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-black">Property Details</h2>
           <Link
-            href={`/listings/new?draft=${params.id}`}
+            href={`/listings/new?draft=${params.id}&step=details`}
             className="text-sm font-medium text-sage-darker hover:text-black"
           >
             Edit Details
@@ -106,13 +118,13 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
       </section>
 
       {/* Photos */}
-      <section className="mt-6 rounded-2xl border border-sage/20 bg-white p-8">
+      <section className="mt-6 rounded-2xl border border-sage/20 bg-white p-6 sm:p-8">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-black">
             Photos ({photoCount})
           </h2>
           <Link
-            href={`/listings/new?draft=${params.id}`}
+            href={`/listings/new?draft=${params.id}&step=photos`}
             className="text-sm font-medium text-sage-darker hover:text-black"
           >
             Edit Photos
@@ -125,12 +137,13 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
           </p>
         )}
 
-        {heroPhoto && (
+        {/* Hero photo */}
+        {heroWithUrl?.signedUrl && (
           <div className="mt-4">
             <p className="mb-2 text-xs font-medium text-gray-500">HERO PHOTO</p>
-            <div className="relative aspect-video w-full max-w-sm overflow-hidden rounded-lg">
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg">
               <Image
-                src={getStorageUrl(heroPhoto.file_path)}
+                src={heroWithUrl.signedUrl}
                 alt="Hero photo"
                 fill
                 className="object-cover"
@@ -139,11 +152,49 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
             </div>
           </div>
         )}
+
+        {/* Thumbnail grid */}
+        {photosWithUrls.length > 1 && (
+          <div className="mt-4">
+            <p className="mb-2 text-xs font-medium text-gray-500">
+              ALL PHOTOS ({photosWithUrls.length})
+            </p>
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6">
+              {photosWithUrls.map((photo) => (
+                <div
+                  key={photo.id}
+                  className={`relative aspect-square overflow-hidden rounded-lg ${
+                    photo.is_hero ? "ring-2 ring-sage-darker" : ""
+                  }`}
+                >
+                  {photo.signedUrl ? (
+                    <Image
+                      src={photo.signedUrl}
+                      alt={photo.file_name}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gray-100 text-xs text-gray-400">
+                      No preview
+                    </div>
+                  )}
+                  {photo.is_hero && (
+                    <span className="absolute bottom-0.5 left-0.5 rounded bg-sage-darker px-1 py-0.5 text-[8px] font-bold text-white">
+                      HERO
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Brand Profile Summary */}
       {typedProfile && (
-        <section className="mt-6 rounded-2xl border border-sage/20 bg-white p-8">
+        <section className="mt-6 rounded-2xl border border-sage/20 bg-white p-6 sm:p-8">
           <h2 className="text-lg font-semibold text-black">Brand Profile</h2>
           <div className="mt-4 flex items-center gap-4">
             <div className="flex items-center gap-3">
@@ -170,18 +221,18 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
       )}
 
       {/* Processing Info */}
-      <section className="mt-6 rounded-2xl border border-sage/20 bg-white p-8">
+      <section className="mt-6 rounded-2xl border border-sage/20 bg-white p-6 sm:p-8">
         <h2 className="text-lg font-semibold text-black">What Happens Next</h2>
         <p className="mt-2 text-sm text-gray-600">
           After payment, we generate your 14-piece content package: 5 branded posts,
-          5 video reels, and 4 stories. Estimated processing time: 15–30 minutes.
+          5 video reels, and 4 stories. Estimated processing time: 5–10 minutes.
         </p>
       </section>
 
       {/* Actions */}
       <div className="mt-8 flex items-center justify-between">
         <Link
-          href={`/listings/new?draft=${params.id}`}
+          href={`/listings/new?draft=${params.id}&step=photos`}
           className="text-sm font-medium text-gray-600 hover:text-black"
         >
           Back to Editing
@@ -199,8 +250,4 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       <dd className="mt-0.5 text-sm text-black">{value}</dd>
     </div>
   );
-}
-
-function getStorageUrl(filePath: string): string {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-photos/${filePath}`;
 }

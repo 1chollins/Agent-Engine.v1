@@ -10,16 +10,18 @@ type NewListingWizardProps = {
   userId: string;
   existingListing?: Listing | null;
   existingPhotos?: ListingPhoto[];
+  initialStep?: "details" | "photos";
 };
 
 export function NewListingWizard({
   userId,
   existingListing,
   existingPhotos = [],
+  initialStep,
 }: NewListingWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState<"details" | "photos">(
-    existingListing ? "photos" : "details"
+    initialStep ?? (existingListing ? "photos" : "details")
   );
   const [listingId, setListingId] = useState<string | null>(
     existingListing?.id ?? null

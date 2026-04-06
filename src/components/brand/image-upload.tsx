@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
@@ -74,7 +74,21 @@ export function ImageUpload({
     [bucket, storagePath, onUploaded]
   );
 
-  const previewSrc = preview || (currentPath ? getPublicUrl(bucket, currentPath) : null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentPath && !preview) {
+      const supabase = createClient();
+      supabase.storage
+        .from(bucket)
+        .createSignedUrl(currentPath, 3600)
+        .then(({ data }) => {
+          if (data?.signedUrl) setSignedUrl(data.signedUrl);
+        });
+    }
+  }, [currentPath, bucket, preview]);
+
+  const previewSrc = preview || signedUrl;
 
   return (
     <div className="space-y-2">
@@ -113,8 +127,3 @@ export function ImageUpload({
   );
 }
 
-function getPublicUrl(bucket: string, path: string): string {
-  const supabase = createClient();
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
-}
