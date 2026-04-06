@@ -3,6 +3,7 @@ import { CONTENT_CALENDAR } from "@/types/content";
 import type { ListingPhoto } from "@/types/listing";
 import { runTextGeneration } from "./text-batch";
 import { runImageGeneration } from "./image-batch";
+import { runVideoGeneration } from "./video-batch";
 
 export async function runGenerationPipeline(listingId: string): Promise<void> {
   const supabase = createServiceClient();
@@ -76,20 +77,29 @@ export async function runGenerationPipeline(listingId: string): Promise<void> {
     // and continue. Image/video generation will run in future sprints.
   }
 
-  // --- Image Generation (Sprint 5) ---
-  try {
-    const imageResult = await runImageGeneration(listingId, pkg.id);
+  // --- Image Generation + Video Generation (run in parallel) ---
+  const [imageResult, videoResult] = await Promise.allSettled([
+    runImageGeneration(listingId, pkg.id),
+    runVideoGeneration(listingId, pkg.id),
+  ]);
+
+  if (imageResult.status === "fulfilled") {
     console.log(
       `Image generation complete for listing ${listingId}: ` +
-      `${imageResult.succeeded} succeeded, ${imageResult.failed} failed`
+      `${imageResult.value.succeeded} succeeded, ${imageResult.value.failed} failed`
     );
-  } catch (err) {
-    console.error(`Image generation failed for listing ${listingId}:`, err);
+  } else {
+    console.error(`Image generation failed for listing ${listingId}:`, imageResult.reason);
   }
 
-  // TODO: In future sprints, trigger additional generation here:
-  // - Video generation (Runway) for reels
-  // - Video processing (FFmpeg) for stitching
+  if (videoResult.status === "fulfilled") {
+    console.log(
+      `Video generation complete for listing ${listingId}: ` +
+      `${videoResult.value.succeeded} succeeded, ${videoResult.value.failed} failed`
+    );
+  } else {
+    console.error(`Video generation failed for listing ${listingId}:`, videoResult.reason);
+  }
 
   // Determine final package status
   const { data: finalPieces } = await supabase

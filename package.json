@@ -12,6 +12,7 @@
     "@resvg/resvg-js": "^2.6.2",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.1",
+    "fluent-ffmpeg": "^2.1.3",
     "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18",
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
     "@runwayml/sdk": "^3.18.0",
+    "@types/fluent-ffmpeg": "^2.1.28",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
