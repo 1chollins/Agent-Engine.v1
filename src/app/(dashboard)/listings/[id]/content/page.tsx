@@ -94,6 +94,8 @@ export default async function ListingContentPage({ params }: ContentPageProps) {
         asset_type: piece.asset_type,
         asset_url: assetUrl,
         asset_alt_url: assetAltUrl,
+        asset_path: piece.asset_path,
+        asset_path_alt: piece.asset_path_alt,
         caption_instagram: piece.caption_instagram,
         caption_facebook: piece.caption_facebook,
         hashtags: piece.hashtags,

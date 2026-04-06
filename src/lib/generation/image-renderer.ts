@@ -44,7 +44,10 @@ export async function renderToImage(
   });
 
   const resvg = new Resvg(svg, {
-    fitTo: { mode: "width", value: width },
+    fitTo: { mode: "original" },
+    dpi: 144,
+    shapeRendering: 2, // geometricPrecision
+    imageRendering: 0, // optimizeQuality
   });
   const pngData = resvg.render();
   return Buffer.from(pngData.asPng());

@@ -12,6 +12,8 @@ type CalendarPiece = {
   asset_type: string | null;
   asset_url: string | null;
   asset_alt_url: string | null;
+  asset_path: string | null;
+  asset_path_alt: string | null;
   caption_instagram: string | null;
   caption_facebook: string | null;
   hashtags: string | null;
@@ -113,10 +115,9 @@ export function ContentCalendar({ pieces, listingAddress }: ContentCalendarProps
                   <span className="text-[10px] text-gray-400">
                     {piece.recommended_time}
                   </span>
-                  {isComplete && piece.asset_url && (
+                  {isComplete && piece.asset_path && (
                     <a
-                      href={piece.asset_url}
-                      download={downloadFilename}
+                      href={`/api/download?path=${encodeURIComponent(piece.asset_path)}&name=${encodeURIComponent(downloadFilename)}`}
                       onClick={(e) => e.stopPropagation()}
                       className="rounded p-0.5 text-gray-400 transition-colors hover:bg-sage/10 hover:text-sage-darker"
                       title="Download"

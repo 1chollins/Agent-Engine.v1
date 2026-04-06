@@ -12,6 +12,8 @@ type PreviewPiece = {
   asset_type: string | null;
   asset_url: string | null;
   asset_alt_url: string | null;
+  asset_path: string | null;
+  asset_path_alt: string | null;
   caption_instagram: string | null;
   caption_facebook: string | null;
   hashtags: string | null;
@@ -73,10 +75,9 @@ export function PreviewModal({ piece, onClose }: PreviewModalProps) {
             </p>
           </div>
           <div className="flex items-center gap-2 self-end sm:self-auto">
-            {piece.asset_url && (
+            {piece.asset_path && (
               <a
-                href={piece.asset_url}
-                download={downloadFilename}
+                href={`/api/download?path=${encodeURIComponent(piece.asset_path)}&name=${encodeURIComponent(downloadFilename)}`}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-sage px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-sage-dark"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,13 +202,12 @@ export function PreviewModal({ piece, onClose }: PreviewModalProps) {
             )}
 
             {/* FB variant download */}
-            {piece.asset_alt_url && piece.content_type === "post" && (
+            {piece.asset_path_alt && piece.content_type === "post" && (
               <div className="rounded-lg border border-sage/20 p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">Facebook variant (1200x630)</span>
                   <a
-                    href={piece.asset_alt_url}
-                    download={`day${String(piece.day_number).padStart(2, "0")}-post-fb.png`}
+                    href={`/api/download?path=${encodeURIComponent(piece.asset_path_alt)}&name=day${String(piece.day_number).padStart(2, "0")}-post-fb.png`}
                     className="inline-flex items-center gap-1 text-xs font-medium text-sage-darker hover:text-black"
                   >
                     <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
