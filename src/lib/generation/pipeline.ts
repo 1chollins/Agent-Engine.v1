@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { CONTENT_CALENDAR } from "@/types/content";
 import type { ListingPhoto } from "@/types/listing";
+import { runTextGeneration } from "./text-batch";
 
 export async function runGenerationPipeline(listingId: string): Promise<void> {
   const supabase = createServiceClient();
@@ -61,19 +62,68 @@ export async function runGenerationPipeline(listingId: string): Promise<void> {
     return;
   }
 
-  // TODO: In future sprints, trigger actual generation here:
-  // - Text generation (Claude Haiku) for captions/hashtags
+  // --- Text Generation (Sprint 4) ---
+  try {
+    const textResult = await runTextGeneration(listingId, pkg.id);
+    console.log(
+      `Text generation complete for listing ${listingId}: ` +
+      `${textResult.succeeded} succeeded, ${textResult.failed} failed`
+    );
+  } catch (err) {
+    console.error(`Text generation failed for listing ${listingId}:`, err);
+    // Text failure is not fatal — mark package as partial_failure
+    // and continue. Image/video generation will run in future sprints.
+  }
+
+  // TODO: In future sprints, trigger additional generation here:
   // - Image generation (Sharp/@vercel/og) for branded posts/stories
   // - Video generation (Runway) for reels
   // - Video processing (FFmpeg) for stitching
-  //
-  // For now, mark all pieces as pending and package as processing.
-  // The pipeline scaffold is complete — external API calls will be
-  // wired in during Sprint 5+ stories.
+
+  // Determine final package status
+  const { data: finalPieces } = await supabase
+    .from("content_pieces")
+    .select("status")
+    .eq("package_id", pkg.id);
+
+  const allComplete = finalPieces?.every((p) => p.status === "complete");
+  const anyFailed = finalPieces?.some((p) => p.status === "failed");
+  const allFailed = finalPieces?.every((p) => p.status === "failed");
+
+  let packageStatus: string;
+  let listingStatus: string;
+
+  if (allFailed) {
+    packageStatus = "failed";
+    listingStatus = "failed";
+  } else if (anyFailed) {
+    packageStatus = "partial_failure";
+    listingStatus = "partial_failure";
+  } else if (allComplete) {
+    packageStatus = "complete";
+    listingStatus = "complete";
+  } else {
+    // Some still pending (awaiting image/video gen in future sprints)
+    packageStatus = "processing";
+    listingStatus = "processing";
+  }
+
+  await supabase
+    .from("content_packages")
+    .update({
+      status: packageStatus,
+      processing_completed_at:
+        packageStatus !== "processing" ? new Date().toISOString() : null,
+    })
+    .eq("id", pkg.id);
+
+  await supabase
+    .from("listings")
+    .update({ status: listingStatus, updated_at: new Date().toISOString() })
+    .eq("id", listingId);
 
   console.log(
-    `Pipeline scaffold complete for listing ${listingId}: ` +
-    `package ${pkg.id} with 14 pieces created`
+    `Pipeline complete for listing ${listingId}: package ${pkg.id} — ${packageStatus}`
   );
 }
 
