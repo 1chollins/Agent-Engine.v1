@@ -63,16 +63,16 @@ export function PreviewModal({ piece, onClose, listingAddress }: PreviewModalPro
     >
       <div className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-sage/10 bg-white px-6 py-4">
-          <div>
-            <h2 className="text-lg font-bold text-black">
+        <div className="sticky top-0 z-10 flex flex-col gap-3 border-b border-sage/10 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-bold text-black sm:text-lg">
               Day {piece.day_number} — {TYPE_LABELS[piece.content_type] ?? piece.content_type}
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-xs text-gray-500 sm:text-sm">
               {piece.recommended_time} · {piece.platform === "both" ? "Instagram & Facebook" : piece.platform}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             {piece.asset_url && (
               <a
                 href={piece.asset_url}

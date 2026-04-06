@@ -129,7 +129,7 @@ export function ProcessingStatus({
       </div>
 
       {/* Piece grid */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
         {pieces.map((piece) => (
           <div
             key={piece.id}

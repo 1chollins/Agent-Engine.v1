@@ -56,7 +56,7 @@ export default async function ProcessingPage({ params }: ProcessingPageProps) {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-2 text-3xl font-bold text-black">
+      <h1 className="mb-2 text-2xl font-bold text-black sm:text-3xl">
         Generating Content
       </h1>
       <p className="mb-8 text-gray-600">
