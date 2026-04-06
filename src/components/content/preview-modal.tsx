@@ -52,9 +52,24 @@ export function PreviewModal({ piece, onClose }: PreviewModalProps) {
     };
   }, [handleKeyDown]);
 
-  const downloadFilename = `day${String(piece.day_number).padStart(2, "0")}-${piece.content_type}${
-    piece.asset_type === "video" ? ".mp4" : ".png"
-  }`;
+  const dayStr = String(piece.day_number).padStart(2, "0");
+  const isPost = piece.content_type === "post";
+  const hasAlt = isPost && piece.asset_path_alt;
+
+  function handleDownload() {
+    // Download primary asset
+    if (piece.asset_path) {
+      const ext = piece.asset_type === "video" ? "mp4" : "png";
+      const name = isPost ? `day${dayStr}-post-ig-1080x1080.${ext}` : `day${dayStr}-${piece.content_type}.${ext}`;
+      triggerDownload(piece.asset_path, name);
+    }
+    // For posts, also download FB variant
+    if (hasAlt && piece.asset_path_alt) {
+      setTimeout(() => {
+        triggerDownload(piece.asset_path_alt!, `day${dayStr}-post-fb-1200x630.png`);
+      }, 500);
+    }
+  }
 
   return (
     <div
@@ -76,15 +91,15 @@ export function PreviewModal({ piece, onClose }: PreviewModalProps) {
           </div>
           <div className="flex items-center gap-2 self-end sm:self-auto">
             {piece.asset_path && (
-              <a
-                href={`/api/download?path=${encodeURIComponent(piece.asset_path)}&name=${encodeURIComponent(downloadFilename)}`}
+              <button
+                onClick={handleDownload}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-sage px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-sage-dark"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                Download
-              </a>
+                Download{hasAlt ? " Both" : ""}
+              </button>
             )}
             <button
               onClick={onClose}
@@ -97,27 +112,52 @@ export function PreviewModal({ piece, onClose }: PreviewModalProps) {
           </div>
         </div>
 
-        <div className="grid gap-6 p-6 lg:grid-cols-2">
+        <div className="grid gap-6 p-4 sm:p-6 lg:grid-cols-2">
           {/* Asset preview */}
-          <div className="flex items-center justify-center rounded-xl bg-gray-50 p-2">
+          <div className="space-y-4">
+            {/* Primary asset (IG for posts, main for reels/stories) */}
             {piece.asset_type === "video" && piece.asset_url ? (
-              <video
-                src={piece.asset_url}
-                controls
-                className="max-h-[500px] w-full rounded-lg"
-                poster=""
-              >
-                Your browser does not support video playback.
-              </video>
+              <div className="rounded-xl bg-gray-50 p-2">
+                <video
+                  src={piece.asset_url}
+                  controls
+                  className="max-h-[500px] w-full rounded-lg"
+                >
+                  Your browser does not support video playback.
+                </video>
+              </div>
             ) : piece.asset_url ? (
-              <img
-                src={piece.asset_url}
-                alt={`Day ${piece.day_number} ${piece.content_type}`}
-                className="max-h-[500px] w-full rounded-lg object-contain"
-              />
+              <div className="rounded-xl bg-gray-50 p-2">
+                {isPost && (
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    Instagram (1080 x 1080)
+                  </p>
+                )}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={piece.asset_url}
+                  alt={`Day ${piece.day_number} ${piece.content_type}`}
+                  className="w-full rounded-lg object-contain"
+                />
+              </div>
             ) : (
-              <div className="flex h-64 w-full items-center justify-center rounded-lg bg-gray-100">
+              <div className="flex h-64 w-full items-center justify-center rounded-xl bg-gray-100">
                 <p className="text-sm text-gray-400">No asset available</p>
+              </div>
+            )}
+
+            {/* FB variant for posts — shown below IG */}
+            {isPost && piece.asset_alt_url && (
+              <div className="rounded-xl bg-gray-50 p-2">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  Facebook (1200 x 630)
+                </p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={piece.asset_alt_url}
+                  alt={`Day ${piece.day_number} post — Facebook`}
+                  className="w-full rounded-lg object-contain"
+                />
               </div>
             )}
           </div>
@@ -200,27 +240,18 @@ export function PreviewModal({ piece, onClose }: PreviewModalProps) {
                 </p>
               </div>
             )}
-
-            {/* FB variant download */}
-            {piece.asset_path_alt && piece.content_type === "post" && (
-              <div className="rounded-lg border border-sage/20 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">Facebook variant (1200x630)</span>
-                  <a
-                    href={`/api/download?path=${encodeURIComponent(piece.asset_path_alt)}&name=day${String(piece.day_number).padStart(2, "0")}-post-fb.png`}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-sage-darker hover:text-black"
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download FB
-                  </a>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function triggerDownload(path: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = `/api/download?path=${encodeURIComponent(path)}&name=${encodeURIComponent(filename)}`;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }

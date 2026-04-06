@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { checkBrandProfileComplete } from "@/lib/brand-profile-check";
 import { NewListingWizard } from "@/components/listing/new-listing-wizard";
+import type { Listing, ListingPhoto } from "@/types/listing";
 
 type NewListingPageProps = {
   searchParams: { draft?: string; step?: string };
@@ -43,13 +44,49 @@ export default async function NewListingPage({ searchParams }: NewListingPagePro
     );
   }
 
+  // Load existing draft if editing
+  let existingListing: Listing | null = null;
+  let existingPhotos: ListingPhoto[] = [];
+
+  if (searchParams.draft) {
+    const { data: listing } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("id", searchParams.draft)
+      .eq("user_id", user.id)
+      .single();
+
+    if (listing) {
+      existingListing = listing as Listing;
+
+      const { data: photos } = await supabase
+        .from("listing_photos")
+        .select("*")
+        .eq("listing_id", searchParams.draft)
+        .order("sort_order");
+
+      existingPhotos = (photos ?? []) as ListingPhoto[];
+    }
+  }
+
+  const isEditing = !!existingListing;
+
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-2 text-3xl font-bold text-black">New Listing</h1>
+      <h1 className="mb-2 text-2xl font-bold text-black sm:text-3xl">
+        {isEditing ? "Edit Listing" : "New Listing"}
+      </h1>
       <p className="mb-8 text-gray-600">
-        Enter your property details and upload photos to generate your content package.
+        {isEditing
+          ? "Update your property details and photos."
+          : "Enter your property details and upload photos to generate your content package."}
       </p>
-      <NewListingWizard userId={user.id} initialStep={searchParams.step === "details" ? "details" : undefined} />
+      <NewListingWizard
+        userId={user.id}
+        existingListing={existingListing}
+        existingPhotos={existingPhotos}
+        initialStep={searchParams.step === "details" ? "details" : undefined}
+      />
     </div>
   );
 }
