@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { CONTENT_CALENDAR } from "@/types/content";
 import type { ListingPhoto } from "@/types/listing";
 import { runTextGeneration } from "./text-batch";
+import { runImageGeneration } from "./image-batch";
 
 export async function runGenerationPipeline(listingId: string): Promise<void> {
   const supabase = createServiceClient();
@@ -75,8 +76,18 @@ export async function runGenerationPipeline(listingId: string): Promise<void> {
     // and continue. Image/video generation will run in future sprints.
   }
 
+  // --- Image Generation (Sprint 5) ---
+  try {
+    const imageResult = await runImageGeneration(listingId, pkg.id);
+    console.log(
+      `Image generation complete for listing ${listingId}: ` +
+      `${imageResult.succeeded} succeeded, ${imageResult.failed} failed`
+    );
+  } catch (err) {
+    console.error(`Image generation failed for listing ${listingId}:`, err);
+  }
+
   // TODO: In future sprints, trigger additional generation here:
-  // - Image generation (Sharp/@vercel/og) for branded posts/stories
   // - Video generation (Runway) for reels
   // - Video processing (FFmpeg) for stitching
 
