@@ -1,7 +1,9 @@
 import RunwayML from "@runwayml/sdk";
 import { createServiceClient } from "@/lib/supabase/server";
 
-const runway = new RunwayML({ apiKey: process.env.RUNWAY_API_KEY! });
+function getRunwayClient() {
+  return new RunwayML({ apiKey: process.env.RUNWAY_API_KEY! });
+}
 
 // Gen-3 Alpha Turbo pricing: ~$0.05 per second of video
 const COST_PER_SECOND = 0.05;
@@ -65,6 +67,7 @@ async function generateSingleClip(
   supabase: ReturnType<typeof createServiceClient>
 ): Promise<ClipGenerationResult> {
   const startTime = Date.now();
+  const runway = getRunwayClient();
 
   try {
     // Submit the generation task

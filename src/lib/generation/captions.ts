@@ -4,7 +4,9 @@ import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import type { ContentType } from "@/types/content";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+function getAnthropicClient() {
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+}
 
 const MODEL = "claude-haiku-4-5-20251001";
 
@@ -176,7 +178,7 @@ Respond in this exact JSON format:
 Return ONLY the JSON array, no other text.`;
 
   const startTime = Date.now();
-  const response = await anthropic.messages.create({
+  const response = await getAnthropicClient().messages.create({
     model: MODEL,
     max_tokens: 4096,
     messages: [{ role: "user", content: prompt }],

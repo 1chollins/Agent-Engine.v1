@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProcessingStatus } from "@/components/processing-status";
-import { DevTriggerButton } from "@/components/dev-trigger-button";
 import type { ContentPackage, ContentPiece } from "@/types/content";
 
 type ProcessingPageProps = {
@@ -94,14 +93,11 @@ export default async function ProcessingPage({ params }: ProcessingPageProps) {
           <PackageStatusBadge status={typedPkg?.status ?? "pending"} />
         </div>
 
-        {/* Dev mode: trigger pipeline when webhook hasn't fired */}
-        {!typedPkg && process.env.NODE_ENV !== "production" && (
-          <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-            <p className="text-sm text-yellow-800">
-              No content package found. If you completed payment but Stripe webhooks
-              aren&apos;t configured locally, trigger the pipeline manually:
+        {!typedPkg && (
+          <div className="mb-4 rounded-lg border border-sage/20 bg-cream p-4">
+            <p className="text-sm text-gray-600">
+              Your content package is being prepared. This page will update automatically.
             </p>
-            <DevTriggerButton listingId={params.id} />
           </div>
         )}
 
