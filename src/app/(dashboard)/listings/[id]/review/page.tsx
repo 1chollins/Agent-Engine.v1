@@ -40,7 +40,6 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
   const typedListing = listing as Listing;
   const typedPhotos = (photos ?? []) as ListingPhoto[];
   const typedProfile = profile as BrandProfile | null;
-  const heroPhoto = typedPhotos.find((p) => p.is_hero) ?? typedPhotos[0];
   const photoCount = typedPhotos.length;
   const canSubmit = photoCount >= MIN_PHOTOS;
   const propertyLabel = PROPERTY_TYPES.find(
