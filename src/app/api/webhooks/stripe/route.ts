@@ -12,9 +12,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = (
+    process.env.STRIPE_WEBHOOK_SECRET ?? process.env.STRIPE_WEBHOOK_SIGNING_SECRET ?? ""
+  ).trim();
+
   if (!webhookSecret) {
-    console.error("Missing STRIPE_WEBHOOK_SECRET");
+    // Log which Stripe-related env vars exist (names only) for debugging
+    const stripeVars = Object.keys(process.env)
+      .filter((k) => k.startsWith("STRIPE"))
+      .join(", ");
+    console.error(
+      `Missing STRIPE_WEBHOOK_SECRET. Available STRIPE_* vars: [${stripeVars || "none"}]`
+    );
     return NextResponse.json({ error: "Server config error" }, { status: 500 });
   }
 
