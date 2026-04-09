@@ -1,3 +1,10 @@
+/**
+ * LOCAL DEV ONLY — production uses Inngest functions in src/inngest/functions/.
+ * Do not call from production code.
+ *
+ * This file is kept for local development and testing where Inngest
+ * is not available. Use the Inngest generate-package function for production.
+ */
 import { createServiceClient } from "@/lib/supabase/server";
 import { CONTENT_CALENDAR } from "@/types/content";
 import type { ListingPhoto } from "@/types/listing";

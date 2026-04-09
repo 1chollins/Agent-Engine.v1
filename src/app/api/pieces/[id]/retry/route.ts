@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { retryPiece } from "@/lib/generation/retry-piece";
+import { inngest } from "@/inngest/client";
 
 export async function POST(
   _request: NextRequest,
@@ -45,9 +45,10 @@ export async function POST(
     );
   }
 
-  // Trigger retry in background — don't block the response
-  retryPiece(params.id).catch((err) => {
-    console.error(`Retry failed for piece ${params.id}:`, err);
+  // Trigger retry via Inngest
+  await inngest.send({
+    name: "piece/retry.requested",
+    data: { piece_id: params.id },
   });
 
   return NextResponse.json({ success: true, message: "Retry started" });

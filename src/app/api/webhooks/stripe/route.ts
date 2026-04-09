@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/server";
-import { runGenerationPipeline } from "@/lib/generation/pipeline";
+import { inngest } from "@/inngest/client";
 import type Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
@@ -82,8 +82,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .update({ status: "processing", updated_at: new Date().toISOString() })
     .eq("id", listingId);
 
-  // Trigger generation pipeline (async — don't block webhook response)
-  runGenerationPipeline(listingId).catch((err) => {
-    console.error(`Generation pipeline failed for listing ${listingId}:`, err);
+  // Trigger generation pipeline via Inngest
+  await inngest.send({
+    name: "package/generation.requested",
+    data: {
+      listing_id: listingId,
+      user_id: session.metadata?.user_id ?? "",
+    },
   });
 }
