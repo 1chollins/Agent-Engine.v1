@@ -25,20 +25,59 @@ export const generatePackage = inngest.createFunction(
       async () => {
         const supabase = createServiceClient();
 
-        // Idempotency: check for existing non-failed package
+        // Idempotency: check for ANY existing package for this listing
         const { data: existing } = await supabase
           .from("content_packages")
-          .select("id")
+          .select("id, status")
           .eq("listing_id", listing_id)
-          .neq("status", "failed")
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (existing) {
-          return existing.id as string;
+          const pkgId = existing.id as string;
+          const status = existing.status as string;
+
+          // Already complete — nothing to do
+          if (status === "complete") {
+            return pkgId;
+          }
+
+          // Still processing — let subsequent steps pick up where they left off
+          if (status === "processing") {
+            return pkgId;
+          }
+
+          // Failed or partial_failure — reset for retry
+          if (status === "failed" || status === "partial_failure") {
+            await supabase
+              .from("content_packages")
+              .update({
+                status: "processing",
+                completed_pieces: 0,
+                failed_pieces: 0,
+                processing_started_at: new Date().toISOString(),
+                processing_completed_at: null,
+              })
+              .eq("id", pkgId);
+
+            await supabase
+              .from("content_pieces")
+              .update({
+                status: "pending",
+                error_message: null,
+                generated_at: null,
+              })
+              .eq("package_id", pkgId);
+
+            return pkgId;
+          }
+
+          // Any other status (e.g. pending) — just return it
+          return pkgId;
         }
 
-        // Create new package
+        // No existing package — create new
         const { data: pkg, error: pkgError } = await supabase
           .from("content_packages")
           .insert({
