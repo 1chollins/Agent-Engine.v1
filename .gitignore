@@ -20,3 +20,6 @@ spikes/output/
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code local settings
+.claude/
