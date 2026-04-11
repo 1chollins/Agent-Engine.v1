@@ -98,6 +98,13 @@ export function PhotoUpload({
           continue;
         }
 
+        // Fire-and-forget: detect orientation server-side
+        fetch("/api/photos/process", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ photo_id: data.id, file_path: filePath }),
+        }).catch(() => {});
+
         newPhotos.push({
           ...data,
           previewUrl: URL.createObjectURL(file),

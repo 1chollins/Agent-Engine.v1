@@ -23,3 +23,6 @@ next-env.d.ts
 
 # Claude Code local settings
 .claude/
+
+# Backfill script output logs
+scripts/backfill-output.txt
