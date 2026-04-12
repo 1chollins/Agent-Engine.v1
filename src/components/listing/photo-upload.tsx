@@ -29,7 +29,9 @@ export function PhotoUpload({
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [verticalOpen, setVerticalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const verticalInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
@@ -123,6 +125,19 @@ export function PhotoUpload({
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragOver(false);
+      if (e.dataTransfer.files.length > 0) {
+        handleFiles(e.dataTransfer.files);
+      }
+    },
+    [handleFiles]
+  );
+
+  const [verticalDragOver, setVerticalDragOver] = useState(false);
+
+  const handleVerticalDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setVerticalDragOver(false);
       if (e.dataTransfer.files.length > 0) {
         handleFiles(e.dataTransfer.files);
       }
@@ -319,6 +334,73 @@ export function PhotoUpload({
           ))}
         </div>
       )}
+
+      {/* Vertical Photos (Optional) */}
+      <div className="border-t border-sage/10 pt-4">
+        {!verticalOpen ? (
+          <button
+            type="button"
+            aria-expanded={false}
+            onClick={() => setVerticalOpen(true)}
+            className="text-sm font-medium text-sage-darker hover:text-black"
+          >
+            📱 Add vertical photos (optional)
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-black">
+                📱 Vertical Photos
+              </p>
+              <button
+                type="button"
+                aria-expanded={true}
+                onClick={() => setVerticalOpen(false)}
+                className="text-xs font-medium text-gray-500 hover:text-black"
+              >
+                Hide
+              </button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Upload portrait-oriented photos here (phone shots work great).
+              We&apos;ll use these for Stories and Reels. If you don&apos;t add any,
+              we&apos;ll use your main photos with a smart background fill.
+            </p>
+            <div
+              onDragOver={(e) => { e.preventDefault(); setVerticalDragOver(true); }}
+              onDragLeave={() => setVerticalDragOver(false)}
+              onDrop={handleVerticalDrop}
+              onClick={() => verticalInputRef.current?.click()}
+              className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
+                verticalDragOver
+                  ? "border-sage-darker bg-sage/10"
+                  : "border-gray-300 hover:border-sage"
+              }`}
+            >
+              <div className="mb-2 flex h-12 w-8 items-center justify-center rounded border border-gray-300 text-gray-400">
+                <svg width="16" height="20" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="1" width="14" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                  <circle cx="8" cy="16" r="1" fill="currentColor" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-gray-600">
+                Drop vertical photos here
+              </p>
+              <p className="mt-0.5 text-xs text-gray-400">
+                or click to browse
+              </p>
+            </div>
+            <input
+              ref={verticalInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.heic"
+              multiple
+              onChange={(e) => e.target.files && handleFiles(e.target.files)}
+              className="hidden"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
