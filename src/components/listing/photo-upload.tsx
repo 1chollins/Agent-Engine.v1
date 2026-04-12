@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { MIN_PHOTOS, MAX_PHOTOS, MAX_PHOTO_SIZE } from "@/types/listing";
@@ -32,6 +32,39 @@ export function PhotoUpload({
   const [verticalOpen, setVerticalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const verticalInputRef = useRef<HTMLInputElement>(null);
+
+  // Generate signed URLs for initial photos loaded from DB (private bucket)
+  useEffect(() => {
+    const needsSigning = initialPhotos.filter((p) => !p.previewUrl);
+    if (needsSigning.length === 0) return;
+
+    const supabase = createClient();
+
+    Promise.all(
+      needsSigning.map(async (photo) => {
+        try {
+          const { data } = await supabase.storage
+            .from("listing-photos")
+            .createSignedUrl(photo.file_path, 3600);
+          return { id: photo.id, signedUrl: data?.signedUrl ?? null };
+        } catch (err) {
+          console.error(`Failed to sign URL for photo ${photo.id}:`, err);
+          return { id: photo.id, signedUrl: null };
+        }
+      })
+    ).then((results) => {
+      const urlMap = new Map(
+        results.filter((r) => r.signedUrl).map((r) => [r.id, r.signedUrl!])
+      );
+      setPhotos((prev) =>
+        prev.map((p) =>
+          !p.previewUrl && urlMap.has(p.id)
+            ? { ...p, previewUrl: urlMap.get(p.id)! }
+            : p
+        )
+      );
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
