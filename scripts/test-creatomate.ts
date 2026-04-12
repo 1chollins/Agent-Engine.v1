@@ -2,14 +2,15 @@
  * Standalone test script for Creatomate reel rendering.
  * Usage: npm run test:creatomate <listing_id>
  *
- * Self-contained — does not import from src/ (which uses Next.js path aliases).
- * Duplicates the buildJustListedModifications + renderReel logic for testing.
+ * Uses @/ path aliases resolved by tsx via tsconfig.json paths.
  */
 import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 import { createClient } from "@supabase/supabase-js";
 import { Client as CreatomateClient } from "creatomate";
+import { pickPhotosForPackage } from "@/lib/generation/photo-picker";
+import type { ListingPhoto } from "@/types/listing";
 
 process.on("unhandledRejection", (err) => {
   console.error("Unhandled rejection:", err);
@@ -71,35 +72,70 @@ async function main() {
 
   console.log(`Agent: ${brand.agent_name}, ${brand.brokerage_name}`);
 
-  // Fetch first 5 photos
-  const { data: photos, error: photoErr } = await supabase
+  // Fetch all photos
+  const { data: allPhotos, error: photoErr } = await supabase
     .from("listing_photos")
-    .select("id, file_path")
+    .select("*")
     .eq("listing_id", listingId)
-    .order("sort_order")
-    .limit(5);
+    .order("sort_order");
 
-  if (photoErr || !photos || photos.length < 5) {
+  if (photoErr || !allPhotos || allPhotos.length < 5) {
     console.error(
-      `Need at least 5 photos, found ${photos?.length ?? 0}: ${photoErr?.message ?? ""}`
+      `Need at least 5 photos, found ${allPhotos?.length ?? 0}: ${photoErr?.message ?? ""}`
     );
     process.exit(1);
   }
 
+  const typedPhotos = allPhotos as ListingPhoto[];
+
+  // Log orientation distribution before picking
+  const vertical = typedPhotos.filter((p) => p.orientation === "vertical");
+  const horizontal = typedPhotos.filter(
+    (p) => p.orientation === "horizontal" || !p.orientation
+  );
+  const square = typedPhotos.filter((p) => p.orientation === "square");
+  console.log(
+    `Photos: ${typedPhotos.length} total ` +
+    `(${vertical.length} vertical, ${horizontal.length} horizontal, ${square.length} square)`
+  );
+
+  // Using Day 2 reel assignment (5 vertical-preferred photos) for the
+  // day1_just_listed template test. Template naming is a known historical
+  // artifact; the template itself is agnostic to which day it represents.
+  const assignments = pickPhotosForPackage(typedPhotos, { reelPhotoCount: 5 });
+  const reelPhotoIds = assignments[1]; // Day 2 = index 1 (first reel)
+
+  if (reelPhotoIds.length < 5) {
+    console.error(
+      `Picker returned ${reelPhotoIds.length} photos for Day 2 reel, need 5`
+    );
+    process.exit(1);
+  }
+
+  console.log(`Picked ${reelPhotoIds.length} photos for Day 2 reel`);
+
+  // Build id→file_path lookup for signed URL generation
+  const photoById = new Map(typedPhotos.map((p) => [p.id, p]));
+
   // Generate signed URLs (1 hour TTL)
   const photoUrls: string[] = [];
-  for (const photo of photos) {
+  for (const photoId of reelPhotoIds) {
+    const photo = photoById.get(photoId);
+    if (!photo) {
+      console.error(`Photo ${photoId} not found in listing photos`);
+      process.exit(1);
+    }
     const { data: signed } = await supabase.storage
       .from("listing-photos")
       .createSignedUrl(photo.file_path, 3600);
     if (!signed?.signedUrl) {
-      console.error(`Failed to sign URL for photo ${photo.id}`);
+      console.error(`Failed to sign URL for photo ${photoId}`);
       process.exit(1);
     }
     photoUrls.push(signed.signedUrl);
   }
 
-  console.log(`Photos: ${photoUrls.length} signed URLs generated`);
+  console.log(`Signed URLs: ${photoUrls.length} generated`);
 
   // Generate headshot signed URL
   let headshotUrl = "";

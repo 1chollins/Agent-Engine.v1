@@ -11,6 +11,7 @@ import type { ListingPhoto } from "@/types/listing";
 import { runTextGeneration } from "./text-batch";
 import { runImageGeneration } from "./image-batch";
 import { runVideoGeneration } from "./video-batch";
+import { pickPhotosForPackage } from "./photo-picker";
 
 export async function runGenerationPipeline(listingId: string): Promise<void> {
   const supabase = createServiceClient();
@@ -41,7 +42,9 @@ export async function runGenerationPipeline(listingId: string): Promise<void> {
     .order("sort_order");
 
   const typedPhotos = (photos ?? []) as ListingPhoto[];
-  const photoAssignments = assignPhotos(typedPhotos);
+  const photoAssignments = pickPhotosForPackage(typedPhotos, {
+    reelPhotoCount: 5,
+  });
 
   // Create 14 content pieces
   const pieces = CONTENT_CALENDAR.map((entry, index) => ({
@@ -153,61 +156,6 @@ export async function runGenerationPipeline(listingId: string): Promise<void> {
   console.log(
     `Pipeline complete for listing ${listingId}: package ${pkg.id} — ${packageStatus}`
   );
-}
-
-/**
- * Assigns photos to each of the 14 content pieces.
- * - Hero photo goes to Day 1 (post) and Day 2 (reel)
- * - Remaining photos distributed to avoid repetition
- * - No photo used in more than 2 pieces
- */
-function assignPhotos(photos: ListingPhoto[]): string[][] {
-  if (photos.length === 0) return Array(14).fill([]);
-
-  const hero = photos.find((p) => p.is_hero) ?? photos[0];
-  const others = photos.filter((p) => p.id !== hero.id);
-  const assignments: string[][] = [];
-
-  for (let i = 0; i < 14; i++) {
-    const entry = CONTENT_CALENDAR[i];
-
-    if (entry.type === "post") {
-      // Posts use 1 photo each
-      if (i === 0) {
-        assignments.push([hero.id]);
-      } else {
-        const postIndex = Math.floor(i / 3);
-        const photo = others[postIndex % others.length];
-        assignments.push([photo?.id ?? hero.id]);
-      }
-    } else if (entry.type === "reel") {
-      // Reels use 4-5 photos each
-      if (i === 1) {
-        // Day 2 reel starts with hero
-        const reelPhotos = [hero.id];
-        for (let j = 0; j < 3 && j < others.length; j++) {
-          reelPhotos.push(others[j].id);
-        }
-        assignments.push(reelPhotos);
-      } else {
-        const reelIndex = Math.floor(i / 3);
-        const start = (reelIndex * 4) % others.length;
-        const reelPhotos: string[] = [];
-        for (let j = 0; j < 4; j++) {
-          const photo = others[(start + j) % others.length];
-          if (photo) reelPhotos.push(photo.id);
-        }
-        assignments.push(reelPhotos);
-      }
-    } else {
-      // Stories use 1 photo each
-      const storyIndex = Math.floor(i / 3) + 2;
-      const photo = others[storyIndex % others.length];
-      assignments.push([photo?.id ?? hero.id]);
-    }
-  }
-
-  return assignments;
 }
 
 async function markListingFailed(

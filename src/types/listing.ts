@@ -58,6 +58,7 @@ export type ListingPhoto = {
   height: number | null;
   sort_order: number;
   is_hero: boolean;
+  orientation: "horizontal" | "vertical" | "square" | null;
   uploaded_at: string;
 };
 

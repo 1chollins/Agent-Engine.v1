@@ -5,6 +5,7 @@ import type { ListingPhoto } from "@/types/listing";
 import { runTextGeneration } from "@/lib/generation/text-batch";
 import { runImageGeneration } from "@/lib/generation/image-batch";
 import { generateSingleReel } from "@/lib/generation/video-single-reel";
+import { pickPhotosForPackage } from "@/lib/generation/photo-picker";
 
 const REEL_DAYS = [2, 5, 8, 11, 14];
 
@@ -101,7 +102,9 @@ export const generatePackage = inngest.createFunction(
           .order("sort_order");
 
         const typedPhotos = (photos ?? []) as ListingPhoto[];
-        const photoAssignments = assignPhotos(typedPhotos);
+        const photoAssignments = pickPhotosForPackage(typedPhotos, {
+          reelPhotoCount: 1,
+        });
 
         // Create 14 content pieces
         const pieces = CONTENT_CALENDAR.map((entry, index) => ({
@@ -205,43 +208,3 @@ export const generatePackage = inngest.createFunction(
   }
 );
 
-/**
- * Distributes photos across 14 content pieces.
- * Duplicated from pipeline.ts to avoid importing the local-dev-only module.
- */
-function assignPhotos(photos: ListingPhoto[]): string[][] {
-  if (photos.length === 0) return Array(14).fill([]);
-
-  const hero = photos.find((p) => p.is_hero) ?? photos[0];
-  const others = photos.filter((p) => p.id !== hero.id);
-  const assignments: string[][] = [];
-
-  for (let i = 0; i < 14; i++) {
-    const entry = CONTENT_CALENDAR[i];
-
-    if (entry.type === "post") {
-      if (i === 0) {
-        assignments.push([hero.id]);
-      } else {
-        const postIndex = Math.floor(i / 3);
-        const photo = others[postIndex % others.length];
-        assignments.push([photo?.id ?? hero.id]);
-      }
-    } else if (entry.type === "reel") {
-      // For Inngest: 1 photo per reel (single clip to stay within 60s timeout)
-      if (i === 1) {
-        assignments.push([hero.id]);
-      } else {
-        const reelIndex = Math.floor(i / 3);
-        const photo = others[reelIndex % others.length];
-        assignments.push([photo?.id ?? hero.id]);
-      }
-    } else {
-      const storyIndex = Math.floor(i / 3) + 2;
-      const photo = others[storyIndex % others.length];
-      assignments.push([photo?.id ?? hero.id]);
-    }
-  }
-
-  return assignments;
-}
