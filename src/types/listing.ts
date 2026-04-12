@@ -69,6 +69,8 @@ export type ListingFormState = {
   listingId?: string;
 };
 
-export const MIN_PHOTOS = 10;
-export const MAX_PHOTOS = 30;
+export const MIN_PHOTOS = 20;
+export const MAX_PHOTOS = 40;
+export const MIN_VERTICAL_PHOTOS = 5;
+export const MAX_VERTICAL_PHOTOS = 40;
 export const MAX_PHOTO_SIZE = 25 * 1024 * 1024; // 25MB

@@ -102,7 +102,10 @@ async function main() {
   // Using Day 2 reel assignment (5 vertical-preferred photos) for the
   // day1_just_listed template test. Template naming is a known historical
   // artifact; the template itself is agnostic to which day it represents.
-  const assignments = pickPhotosForPackage(typedPhotos, { reelPhotoCount: 5 });
+  const assignments = pickPhotosForPackage(typedPhotos, {
+    reelPhotoCount: 5,
+    verticalHeroId: listing.vertical_hero_photo_id ?? null,
+  });
   const reelPhotoIds = assignments[1]; // Day 2 = index 1 (first reel)
 
   if (reelPhotoIds.length < 5) {

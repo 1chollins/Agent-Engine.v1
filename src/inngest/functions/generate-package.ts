@@ -94,6 +94,13 @@ export const generatePackage = inngest.createFunction(
           throw new Error(`Failed to create package: ${pkgError?.message}`);
         }
 
+        // Fetch listing for vertical hero
+        const { data: listing } = await supabase
+          .from("listings")
+          .select("vertical_hero_photo_id")
+          .eq("id", listing_id)
+          .single();
+
         // Fetch photos for assignment
         const { data: photos } = await supabase
           .from("listing_photos")
@@ -104,6 +111,7 @@ export const generatePackage = inngest.createFunction(
         const typedPhotos = (photos ?? []) as ListingPhoto[];
         const photoAssignments = pickPhotosForPackage(typedPhotos, {
           reelPhotoCount: 1,
+          verticalHeroId: listing?.vertical_hero_photo_id ?? null,
         });
 
         // Create 14 content pieces

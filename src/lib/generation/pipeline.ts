@@ -34,6 +34,13 @@ export async function runGenerationPipeline(listingId: string): Promise<void> {
     return;
   }
 
+  // Fetch listing for vertical hero
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("vertical_hero_photo_id")
+    .eq("id", listingId)
+    .single();
+
   // Fetch photos for assignment
   const { data: photos } = await supabase
     .from("listing_photos")
@@ -44,6 +51,7 @@ export async function runGenerationPipeline(listingId: string): Promise<void> {
   const typedPhotos = (photos ?? []) as ListingPhoto[];
   const photoAssignments = pickPhotosForPackage(typedPhotos, {
     reelPhotoCount: 5,
+    verticalHeroId: listing?.vertical_hero_photo_id ?? null,
   });
 
   // Create 14 content pieces
