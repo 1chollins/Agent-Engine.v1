@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { MIN_PHOTOS, MAX_PHOTOS } from "@/types/listing";
 import type { ListingFormState } from "@/types/listing";
 
 const VALID_PROPERTY_TYPES = [
@@ -79,8 +80,8 @@ export async function submitListingForReview(listingId: string): Promise<Listing
     .eq("listing_id", listingId);
 
   const count = photos?.length ?? 0;
-  if (count < 10) return { error: `Upload at least 10 photos (${count} uploaded)`, success: null };
-  if (count > 30) return { error: "Maximum 30 photos allowed", success: null };
+  if (count < MIN_PHOTOS) return { error: `Upload at least ${MIN_PHOTOS} photos (${count} uploaded)`, success: null };
+  if (count > MAX_PHOTOS) return { error: `Maximum ${MAX_PHOTOS} photos allowed`, success: null };
 
   const { error } = await supabase
     .from("listings")

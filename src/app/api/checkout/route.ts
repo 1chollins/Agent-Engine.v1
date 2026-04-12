@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
+import { MIN_PHOTOS } from "@/types/listing";
 
 const PACKAGE_PRICE_CENTS = Number(process.env.PACKAGE_PRICE_CENTS || "9900");
 
@@ -36,9 +37,9 @@ export async function POST(request: NextRequest) {
     .select("id", { count: "exact", head: true })
     .eq("listing_id", listingId);
 
-  if (!count || count < 10) {
+  if (!count || count < MIN_PHOTOS) {
     return NextResponse.json(
-      { error: `Need at least 10 photos (${count ?? 0} uploaded)` },
+      { error: `Need at least ${MIN_PHOTOS} photos (${count ?? 0} uploaded)` },
       { status: 400 }
     );
   }
