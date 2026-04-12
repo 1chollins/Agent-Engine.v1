@@ -43,6 +43,7 @@ export type Listing = {
   hoa_info: string | null;
   additional_notes: string | null;
   status: ListingStatus;
+  vertical_hero_photo_id: string | null;
   created_at: string;
   updated_at: string;
 };
