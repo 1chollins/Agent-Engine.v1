@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test:creatomate": "tsx scripts/test-creatomate.ts",
-    "backfill:photos": "tsx scripts/backfill-photo-orientation.ts"
+    "backfill:photos": "tsx scripts/backfill-photo-orientation.ts",
+    "cleanup:test-artifact": "tsx scripts/cleanup-test-artifact.ts"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
