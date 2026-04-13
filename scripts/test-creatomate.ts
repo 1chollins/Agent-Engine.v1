@@ -10,6 +10,8 @@ dotenv.config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
 import { Client as CreatomateClient } from "creatomate";
 import { pickPhotosForPackage } from "@/lib/generation/photo-picker";
+import { selectTemplate, getPhotoCountForTemplate } from "@/lib/generation/template-selector";
+import { CONTENT_CALENDAR } from "@/types/content";
 import type { ListingPhoto } from "@/types/listing";
 
 process.on("unhandledRejection", (err) => {
@@ -99,11 +101,21 @@ async function main() {
     `(${vertical.length} vertical, ${horizontal.length} horizontal, ${square.length} square)`
   );
 
+  // Build per-day photo counts from template selector
+  const photoCounts: Record<number, number> = {};
+  for (const entry of CONTENT_CALENDAR) {
+    if (entry.type === "reel" || entry.type === "story") {
+      const key = selectTemplate({ contentType: entry.type, dayNumber: entry.day });
+      photoCounts[entry.day] = getPhotoCountForTemplate(key);
+    } else {
+      photoCounts[entry.day] = 1;
+    }
+  }
+
   // Using Day 2 reel assignment (5 vertical-preferred photos) for the
-  // day1_just_listed template test. Template naming is a known historical
-  // artifact; the template itself is agnostic to which day it represents.
+  // day1_just_listed template test.
   const assignments = pickPhotosForPackage(typedPhotos, {
-    reelPhotoCount: 5,
+    photoCounts,
     verticalHeroId: listing.vertical_hero_photo_id ?? null,
   });
   const reelPhotoIds = assignments[1]; // Day 2 = index 1 (first reel)

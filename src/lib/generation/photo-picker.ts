@@ -2,7 +2,7 @@ import { CONTENT_CALENDAR } from "@/types/content";
 import type { ListingPhoto } from "@/types/listing";
 
 type PhotoPickerOptions = {
-  reelPhotoCount: number;
+  photoCounts: Record<number, number>;
   verticalHeroId: string | null;
 };
 
@@ -110,8 +110,10 @@ export function pickPhotosForPackage(
   reelIndices.sort((a, b) => (a === 1 ? -1 : b === 1 ? 1 : a - b));
 
   for (const idx of reelIndices) {
-    const isDay2 = idx === 1;
-    const verticalsNeeded = isDay2 ? 4 : 5;
+    const dayNumber = CONTENT_CALENDAR[idx].day;
+    const isDay2 = dayNumber === 2;
+    const count = options.photoCounts[dayNumber] ?? 1;
+    const verticalsNeeded = isDay2 ? count - 1 : count;
     const canGoVertical =
       verticalHero !== null && unusedVerticalsCount() >= verticalsNeeded;
 
@@ -124,7 +126,7 @@ export function pickPhotosForPackage(
         reelPhotos.push(verticalHero!.id);
         usedInPiece.add(verticalHero!.id);
       }
-      const slotsRemaining = options.reelPhotoCount - reelPhotos.length;
+      const slotsRemaining = count - reelPhotos.length;
       for (let j = 0; j < slotsRemaining; j++) {
         reelPhotos.push(
           pickVerticalForPiece(usedInPiece) ?? horizontalHero.id
@@ -136,7 +138,7 @@ export function pickPhotosForPackage(
         reelPhotos.push(horizontalHero.id);
         usedInPiece.add(horizontalHero.id);
       }
-      const slotsRemaining = options.reelPhotoCount - reelPhotos.length;
+      const slotsRemaining = count - reelPhotos.length;
       for (let j = 0; j < slotsRemaining; j++) {
         reelPhotos.push(
           pickHorizontalForPiece(usedInPiece) ?? horizontalHero.id
@@ -153,16 +155,28 @@ export function pickPhotosForPackage(
     .filter((i) => i >= 0);
 
   for (const idx of storyIndices) {
+    const dayNumber = CONTENT_CALENDAR[idx].day;
+    const count = options.photoCounts[dayNumber] ?? 1;
     const usedInPiece = new Set<string>();
-    if (unusedVerticalsCount() >= 1) {
-      assignments[idx] = [
-        pickVerticalForPiece(usedInPiece) ?? horizontalHero.id,
-      ];
+    const storyPhotos: string[] = [];
+
+    if (unusedVerticalsCount() >= count) {
+      // All-vertical story
+      for (let j = 0; j < count; j++) {
+        storyPhotos.push(
+          pickVerticalForPiece(usedInPiece) ?? horizontalHero.id
+        );
+      }
     } else {
-      assignments[idx] = [
-        pickHorizontalForPiece(usedInPiece) ?? horizontalHero.id,
-      ];
+      // All-horizontal story
+      for (let j = 0; j < count; j++) {
+        storyPhotos.push(
+          pickHorizontalForPiece(usedInPiece) ?? horizontalHero.id
+        );
+      }
     }
+
+    assignments[idx] = storyPhotos;
   }
 
   // --- Phase C: Posts in calendar order ---

@@ -6,6 +6,7 @@ import { runTextGeneration } from "@/lib/generation/text-batch";
 import { runImageGeneration } from "@/lib/generation/image-batch";
 import { generateSingleReel } from "@/lib/generation/video-single-reel";
 import { pickPhotosForPackage } from "@/lib/generation/photo-picker";
+import { selectTemplate, getPhotoCountForTemplate } from "@/lib/generation/template-selector";
 
 const REEL_DAYS = [2, 5, 8, 11, 14];
 
@@ -109,8 +110,24 @@ export const generatePackage = inngest.createFunction(
           .order("sort_order");
 
         const typedPhotos = (photos ?? []) as ListingPhoto[];
+
+        // Select templates and build per-day photo counts
+        const templateSelections: Record<number, string | null> = {};
+        const photoCounts: Record<number, number> = {};
+
+        for (const entry of CONTENT_CALENDAR) {
+          if (entry.type === "reel" || entry.type === "story") {
+            const key = selectTemplate({ contentType: entry.type, dayNumber: entry.day });
+            templateSelections[entry.day] = key;
+            photoCounts[entry.day] = getPhotoCountForTemplate(key);
+          } else {
+            templateSelections[entry.day] = null;
+            photoCounts[entry.day] = 1;
+          }
+        }
+
         const photoAssignments = pickPhotosForPackage(typedPhotos, {
-          reelPhotoCount: 1,
+          photoCounts,
           verticalHeroId: listing?.vertical_hero_photo_id ?? null,
         });
 
@@ -123,6 +140,7 @@ export const generatePackage = inngest.createFunction(
           status: "pending" as const,
           recommended_time: entry.time,
           source_photo_ids: photoAssignments[index] ?? [],
+          template_key: templateSelections[entry.day] ?? null,
         }));
 
         const { error: piecesError } = await supabase

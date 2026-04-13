@@ -12,6 +12,7 @@ import { runTextGeneration } from "./text-batch";
 import { runImageGeneration } from "./image-batch";
 import { runVideoGeneration } from "./video-batch";
 import { pickPhotosForPackage } from "./photo-picker";
+import { selectTemplate, getPhotoCountForTemplate } from "./template-selector";
 
 export async function runGenerationPipeline(listingId: string): Promise<void> {
   const supabase = createServiceClient();
@@ -49,8 +50,24 @@ export async function runGenerationPipeline(listingId: string): Promise<void> {
     .order("sort_order");
 
   const typedPhotos = (photos ?? []) as ListingPhoto[];
+
+  // Select templates and build per-day photo counts
+  const templateSelections: Record<number, string | null> = {};
+  const photoCounts: Record<number, number> = {};
+
+  for (const entry of CONTENT_CALENDAR) {
+    if (entry.type === "reel" || entry.type === "story") {
+      const key = selectTemplate({ contentType: entry.type, dayNumber: entry.day });
+      templateSelections[entry.day] = key;
+      photoCounts[entry.day] = getPhotoCountForTemplate(key);
+    } else {
+      templateSelections[entry.day] = null;
+      photoCounts[entry.day] = 1;
+    }
+  }
+
   const photoAssignments = pickPhotosForPackage(typedPhotos, {
-    reelPhotoCount: 5,
+    photoCounts,
     verticalHeroId: listing?.vertical_hero_photo_id ?? null,
   });
 
@@ -63,6 +80,7 @@ export async function runGenerationPipeline(listingId: string): Promise<void> {
     status: "pending" as const,
     recommended_time: entry.time,
     source_photo_ids: photoAssignments[index] ?? [],
+    template_key: templateSelections[entry.day] ?? null,
   }));
 
   const { error: piecesError } = await supabase
