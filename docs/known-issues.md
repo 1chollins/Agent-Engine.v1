@@ -61,3 +61,12 @@ Creatomate mp4 downloads buffer the full file in memory (2-10MB typical per reel
 ### Empty brand asset URLs in Creatomate templates
 
 When `brand_profiles.headshot_path` or `brand_profiles.logo_path` is null, `getBrandAssetUrl` returns an empty string. This passes the `renderReel()` slot validation (which checks key existence, not value) but sends an empty `.source` to Creatomate for required slots like `Picture` (day1_just_listed) and `Brand-Logo` (reel_simple_showcase). Creatomate will render a blank/missing image in those slots. Before launch, either make headshot and logo required in the brand profile form (they're already `NOT NULL` in the schema, so this should only occur if paths are empty strings) or add an explicit check in `startReelRender` that fails early with a clear error.
+
+### Satori/ResVG 'fetch failed' on posts and stories
+
+End-to-end test on 2026-04-13 (commit 15d3d94) produced 2/14 failed pieces in a 5/5-reel-success run. Both failures in Satori/ResVG path (not Phase 4's Creatomate path):
+
+- Day 1 post: "IG upload failed: fetch failed"
+- Day 3 story: "Upload failed: fetch failed"
+
+Likely causes: Google Fonts CDN fetch intermittency, photo signed URL network error, or transient Supabase Storage issue during upload. Not a Phase 4 regression — pre-existing or flaky infrastructure dependency. Phase 5 rewrites stories to Creatomate which eliminates half this surface area. Investigate further if failure rate exceeds 10% in repeated runs; otherwise rely on retry-piece functionality.
