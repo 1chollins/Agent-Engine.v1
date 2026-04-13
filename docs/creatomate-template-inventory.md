@@ -80,19 +80,28 @@
 
 ---
 
-## Template 4: TBD
-- **Template ID**: *(paste UUID from Creatomate dashboard)*
-- **Env var**: `CREATOMATE_TEMPLATE_DAY4_TBD`
-- **Theme**:
-- **Assigned to**: Day 8
-- **Aspect ratio**: 9:16 vertical
-- **Duration**:
-- **Photo slot count**:
+## Template 4: Story — Four Scene
+- **Template ID**: `f3727bc7-fa3c-475a-aac9-4f8726458b7b`
+- **Env var**: `CREATOMATE_TEMPLATE_STORY_FOUR_SCENE`
+- **Theme**: Four Scene Story
+- **Assigned to**: Random rotation across story days (3, 6, 9, 12) alongside story_triple_slide
+- **Aspect ratio**: 9:16 vertical (720x1280) at 60fps
+- **Duration**: 23 seconds (4 compositions: 5s + 6s + 6s + 6s)
+- **Photo slot count**: 4
 - **Full modifications structure**:
 ```json
-{}
+{
+  "Background-1.source": "<signed_url>",
+  "Background-2.source": "<signed_url>",
+  "Background-3.source": "<signed_url>",
+  "Background-4.source": "<signed_url>",
+  "Text-1.text": "New Listing: Austin",
+  "Text-2.text": "3 bed · 2 bath · 1,800 sqft",
+  "Text-3.text": "123 Main St",
+  "Text-4.text": "janesmith.kw.com"
+}
 ```
-- **Notes**:
+- **Notes**: Text content uses city, property stats, address, and website (fallback "Link in bio for full tour"). Video background slots were converted to image in template JSON so all 4 backgrounds accept photo URLs from the picker. Music element was removed from the template JSON — renders silent. Builder function: `buildFourSceneStoryModifications()` in `src/lib/generation/creatomate.ts`. Not yet wired into pipeline.
 
 ---
 

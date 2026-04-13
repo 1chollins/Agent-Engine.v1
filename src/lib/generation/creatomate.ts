@@ -205,3 +205,38 @@ export function buildSimpleShowcaseReelModifications(
     "URL.text": website ?? "Link in bio",
   };
 }
+
+type FourSceneStoryParams = {
+  photoUrls: string[];
+  city: string;
+  beds: number;
+  baths: number;
+  sqft: number | null;
+  address: string;
+  website: string | null;
+};
+
+export function buildFourSceneStoryModifications(
+  params: FourSceneStoryParams
+): Record<string, string> {
+  const { photoUrls, city, beds, baths, sqft, address, website } = params;
+
+  if (photoUrls.length !== 4) {
+    throw new Error(
+      `buildFourSceneStoryModifications requires exactly 4 photo URLs, got ${photoUrls.length}`
+    );
+  }
+
+  const sqftText = sqft ? ` · ${sqft.toLocaleString()} sqft` : "";
+
+  return {
+    "Background-1.source": photoUrls[0],
+    "Background-2.source": photoUrls[1],
+    "Background-3.source": photoUrls[2],
+    "Background-4.source": photoUrls[3],
+    "Text-1.text": `New Listing: ${city}`,
+    "Text-2.text": `${beds} bed · ${baths} bath${sqftText}`,
+    "Text-3.text": address,
+    "Text-4.text": website ?? "Link in bio for full tour",
+  };
+}

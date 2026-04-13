@@ -8,7 +8,7 @@
  */
 
 // Template keys — add new templates as they're designed in Creatomate
-export type ContentTemplateKey = "day1_just_listed" | "story_triple_slide" | "reel_simple_showcase";
+export type ContentTemplateKey = "day1_just_listed" | "story_triple_slide" | "reel_simple_showcase" | "story_four_scene";
 
 export type ContentTemplate = {
   id: string;
@@ -26,6 +26,7 @@ const ENV_KEYS: Record<ContentTemplateKey, string> = {
   day1_just_listed: "CREATOMATE_TEMPLATE_DAY1_JUST_LISTED",
   story_triple_slide: "CREATOMATE_TEMPLATE_STORY_TRIPLE_SLIDE",
   reel_simple_showcase: "CREATOMATE_TEMPLATE_REEL_SIMPLE_SHOWCASE",
+  story_four_scene: "CREATOMATE_TEMPLATE_STORY_FOUR_SCENE",
 };
 
 const TEMPLATE_DEFS: Record<
@@ -91,6 +92,26 @@ const TEMPLATE_DEFS: Record<
       "Brand-Name",
       "Brand-Logo",
       "URL",
+    ],
+  },
+  story_four_scene: {
+    label: "Story — Four Scene",
+    heroLabel: "Four Scene Story",
+    description:
+      "4-scene story with transitions between each photo. 23s duration, 9:16 vertical. Each scene has a photo background and text overlay.",
+    templateType: "story",
+    photoCount: 4,
+    aspectRatio: "9:16",
+    duration: 23,
+    requiredSlots: [
+      "Background-1",
+      "Background-2",
+      "Background-3",
+      "Background-4",
+      "Text-1",
+      "Text-2",
+      "Text-3",
+      "Text-4",
     ],
   },
 };
