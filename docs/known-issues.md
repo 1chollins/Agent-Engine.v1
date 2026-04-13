@@ -62,14 +62,22 @@ Creatomate mp4 downloads buffer the full file in memory (2-10MB typical per reel
 
 When `brand_profiles.headshot_path` or `brand_profiles.logo_path` is null, `getBrandAssetUrl` returns an empty string. This passes the `renderReel()` slot validation (which checks key existence, not value) but sends an empty `.source` to Creatomate for required slots like `Picture` (day1_just_listed) and `Brand-Logo` (reel_simple_showcase). Creatomate will render a blank/missing image in those slots. Before launch, either make headshot and logo required in the brand profile form (they're already `NOT NULL` in the schema, so this should only occur if paths are empty strings) or add an explicit check in `startReelRender` that fails early with a clear error.
 
-### Satori/ResVG 'fetch failed' on posts and stories
+### Intermittent 'fetch failed' on Supabase Storage uploads
 
-End-to-end test on 2026-04-13 (commit 15d3d94) produced 2/14 failed pieces in a 5/5-reel-success run. Both failures in Satori/ResVG path (not Phase 4's Creatomate path):
+Observed across multiple code paths — this is an infrastructure-level intermittent, not specific to any one generation pipeline. The Supabase Storage JS SDK calls `fetch()` under the hood, and transient network failures cause `"fetch failed"` errors.
 
-- Day 1 post: "IG upload failed: fetch failed"
-- Day 3 story: "Upload failed: fetch failed"
+**Observed instances:**
+- Phase 4 e2e test (commit 15d3d94, 2026-04-13): 2/14 pieces failed
+  - Day 1 post (Satori path): "IG upload failed: fetch failed"
+  - Day 3 story (Satori path): "Upload failed: fetch failed"
+- Phase 6 e2e test (commit 25e0365, 2026-04-13): 1/14 pieces failed
+  - Day 3 story (Creatomate path): "Supabase upload failed: fetch failed" at `creatomate-render.ts:233` inside `finalizeStoryRender`
 
-Likely causes: Google Fonts CDN fetch intermittency, photo signed URL network error, or transient Supabase Storage issue during upload. Not a Phase 4 regression — pre-existing or flaky infrastructure dependency. Phase 5 rewrites stories to Creatomate which eliminates half this surface area. Investigate further if failure rate exceeds 10% in repeated runs; otherwise rely on retry-piece functionality.
+**Affected code paths:** `finalizeStoryRender`, `finalizeReelRender` (same upload pattern in `creatomate-render.ts`), `generatePostImages` in `images-post.ts`. Any code calling `supabase.storage.from(...).upload()` is susceptible.
+
+**Estimated failure rate:** ~7% per piece based on 3 failures across 28 piece-attempts (2 test runs × 14 pieces).
+
+**Mitigation:** Failed pieces can be retried via the retry-piece path rebuilt in Phase 5B, which uses the same Creatomate flow for reels and stories. Investigate further if failure rate exceeds 10% in production; otherwise rely on retry functionality. Consider adding a single automatic retry with 2s delay inside finalize functions if the pattern persists.
 
 ### Stories changed from PNG to MP4 (Phase 5)
 
