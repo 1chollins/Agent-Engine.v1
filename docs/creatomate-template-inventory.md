@@ -56,19 +56,27 @@
 
 ---
 
-## Template 3: TBD
-- **Template ID**: *(paste UUID from Creatomate dashboard)*
-- **Env var**: `CREATOMATE_TEMPLATE_DAY3_TBD`
-- **Theme**:
-- **Assigned to**: Day 5
-- **Aspect ratio**: 9:16 vertical
-- **Duration**:
-- **Photo slot count**:
+## Template 3: Reel — Simple Showcase
+- **Template ID**: `de8d6882-d1f2-4bc5-ba1f-f25168c362c6`
+- **Env var**: `CREATOMATE_TEMPLATE_REEL_SIMPLE_SHOWCASE`
+- **Theme**: Simple Showcase
+- **Assigned to**: Random rotation across reel days 5/8/11/14
+- **Aspect ratio**: 9:16 vertical (720x1280)
+- **Duration**: 12 seconds
+- **Photo slot count**: 4
 - **Full modifications structure**:
 ```json
-{}
+{
+  "Image-1.source": "<signed_url>",
+  "Image-2.source": "<signed_url>",
+  "Image-3.source": "<signed_url>",
+  "Image-4.source": "<signed_url>",
+  "Brand-Name.text": "Keller Williams Realty",
+  "Brand-Logo.source": "<logo_signed_url>",
+  "URL.text": "janesmith.kw.com"
+}
 ```
-- **Notes**:
+- **Notes**: Builder function: `buildSimpleShowcaseReelModifications()` in `src/lib/generation/creatomate.ts`. Falls back to "Link in bio" when `brand_profiles.website` is null. Not yet wired into pipeline.
 
 ---
 

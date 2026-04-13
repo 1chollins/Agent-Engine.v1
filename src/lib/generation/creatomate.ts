@@ -176,3 +176,32 @@ export function buildTripleSlideStoryModifications(
     "Text.text": `${city}, ${state}`,
   };
 }
+
+type SimpleShowcaseReelParams = {
+  photoUrls: string[];
+  brandName: string;
+  brandLogoUrl: string;
+  website: string | null;
+};
+
+export function buildSimpleShowcaseReelModifications(
+  params: SimpleShowcaseReelParams
+): Record<string, string> {
+  const { photoUrls, brandName, brandLogoUrl, website } = params;
+
+  if (photoUrls.length !== 4) {
+    throw new Error(
+      `buildSimpleShowcaseReelModifications requires exactly 4 photo URLs, got ${photoUrls.length}`
+    );
+  }
+
+  return {
+    "Image-1.source": photoUrls[0],
+    "Image-2.source": photoUrls[1],
+    "Image-3.source": photoUrls[2],
+    "Image-4.source": photoUrls[3],
+    "Brand-Name.text": brandName,
+    "Brand-Logo.source": brandLogoUrl,
+    "URL.text": website ?? "Link in bio",
+  };
+}

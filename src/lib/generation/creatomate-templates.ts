@@ -8,7 +8,7 @@
  */
 
 // Template keys — add new templates as they're designed in Creatomate
-export type ContentTemplateKey = "day1_just_listed" | "story_triple_slide";
+export type ContentTemplateKey = "day1_just_listed" | "story_triple_slide" | "reel_simple_showcase";
 
 export type ContentTemplate = {
   id: string;
@@ -25,6 +25,7 @@ export type ContentTemplate = {
 const ENV_KEYS: Record<ContentTemplateKey, string> = {
   day1_just_listed: "CREATOMATE_TEMPLATE_DAY1_JUST_LISTED",
   story_triple_slide: "CREATOMATE_TEMPLATE_STORY_TRIPLE_SLIDE",
+  reel_simple_showcase: "CREATOMATE_TEMPLATE_REEL_SIMPLE_SHOWCASE",
 };
 
 const TEMPLATE_DEFS: Record<
@@ -71,6 +72,25 @@ const TEMPLATE_DEFS: Record<
       "Image-2",
       "Image-3",
       "Text",
+    ],
+  },
+  reel_simple_showcase: {
+    label: "Reel — Simple Showcase",
+    heroLabel: "Simple Showcase",
+    description:
+      "4-photo reel with branded overlay and website URL outro. 12s duration, 9:16 vertical.",
+    templateType: "reel",
+    photoCount: 4,
+    aspectRatio: "9:16",
+    duration: 12,
+    requiredSlots: [
+      "Image-1",
+      "Image-2",
+      "Image-3",
+      "Image-4",
+      "Brand-Name",
+      "Brand-Logo",
+      "URL",
     ],
   },
 };
