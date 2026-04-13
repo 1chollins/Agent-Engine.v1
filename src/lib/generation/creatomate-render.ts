@@ -50,6 +50,18 @@ export async function startReelRender(
   }
 
   const typedPiece = piece as ContentPiece;
+
+  if (typedPiece.status === "complete") {
+    throw new Error(
+      `Piece ${typedPiece.id} (day ${dayNumber}) is already complete — skipping duplicate render`
+    );
+  }
+  if (typedPiece.status === "processing") {
+    throw new Error(
+      `Piece ${typedPiece.id} (day ${dayNumber}) is already processing — skipping duplicate render`
+    );
+  }
+
   const templateKey = typedPiece.template_key;
 
   if (!templateKey) {
@@ -152,6 +164,18 @@ export async function startStoryRender(
   }
 
   const typedPiece = piece as ContentPiece;
+
+  if (typedPiece.status === "complete") {
+    throw new Error(
+      `Piece ${typedPiece.id} (day ${dayNumber}) is already complete — skipping duplicate render`
+    );
+  }
+  if (typedPiece.status === "processing") {
+    throw new Error(
+      `Piece ${typedPiece.id} (day ${dayNumber}) is already processing — skipping duplicate render`
+    );
+  }
+
   const templateKey = typedPiece.template_key;
 
   if (!templateKey) {
