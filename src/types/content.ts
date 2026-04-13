@@ -43,6 +43,7 @@ export type ContentPiece = {
   story_cta: string | null;
   recommended_time: string;
   source_photo_ids: string[] | null;
+  template_key: string | null;
   error_message: string | null;
   generated_at: string | null;
   created_at: string;

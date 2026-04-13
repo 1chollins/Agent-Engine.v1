@@ -74,10 +74,9 @@ export async function renderReel(
   if (listingId) {
     try {
       const supabase = createServiceClient();
-      // Using "transloadit" service enum until schema is updated to include "creatomate"
       await supabase.from("cost_logs").insert({
         listing_id: listingId,
-        service: "transloadit",
+        service: "creatomate",
         endpoint: `creatomate:render_reel:${templateKey}`,
         cost_usd: 0.30,
         response_time_ms: elapsed,

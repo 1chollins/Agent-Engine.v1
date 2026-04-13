@@ -49,3 +49,15 @@ To enable video-input templates:
 **Cost impact:** +$2-3 per reel using video-input templates (Runway at $0.50/clip × 4-5 clips).
 
 **Deferred because:** Phase 1 scope is to make the realtor's three original complaints (cropping, weak video, repeated photos) go away. Photo-input templates with Creatomate's built-in animation/transitions address "weak video" sufficiently for launch. Video-input templates are a v1.1 upgrade to add more visual variety if user feedback warrants it.
+
+### Creatomate mp4 memory buffering
+
+Creatomate mp4 downloads buffer the full file in memory (2-10MB typical per reel). Finalize phase runs all 5 reels in parallel via `Promise.allSettled`, so peak memory is ~50MB. Acceptable for Vercel. Revisit if template durations exceed 30s, reel count grows, or memory pressure appears in Vercel logs.
+
+### startReelRender is not idempotent
+
+`startReelRender` is not idempotent — Inngest retries on `start-reel-N` step failure will spawn duplicate Creatomate render jobs, costing credits. The function-level config has `retries: 0` but Inngest defaults to 3 retries per individual step. Before launch, either disable retries on `start-reel-N` steps or add an idempotency check (skip if piece status already "processing" or "complete").
+
+### Empty brand asset URLs in Creatomate templates
+
+When `brand_profiles.headshot_path` or `brand_profiles.logo_path` is null, `getBrandAssetUrl` returns an empty string. This passes the `renderReel()` slot validation (which checks key existence, not value) but sends an empty `.source` to Creatomate for required slots like `Picture` (day1_just_listed) and `Brand-Logo` (reel_simple_showcase). Creatomate will render a blank/missing image in those slots. Before launch, either make headshot and logo required in the brand profile form (they're already `NOT NULL` in the schema, so this should only occur if paths are empty strings) or add an explicit check in `startReelRender` that fails early with a clear error.

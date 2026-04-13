@@ -4,7 +4,12 @@ import { CONTENT_CALENDAR } from "@/types/content";
 import type { ListingPhoto } from "@/types/listing";
 import { runTextGeneration } from "@/lib/generation/text-batch";
 import { runImageGeneration } from "@/lib/generation/image-batch";
-import { generateSingleReel } from "@/lib/generation/video-single-reel";
+import {
+  startReelRender,
+  checkReelRenderStatus,
+  finalizeReelRender,
+  markPieceFailed,
+} from "@/lib/generation/video-single-reel";
 import { pickPhotosForPackage } from "@/lib/generation/photo-picker";
 import { selectTemplate, getPhotoCountForTemplate } from "@/lib/generation/template-selector";
 
@@ -164,21 +169,101 @@ export const generatePackage = inngest.createFunction(
     });
 
     // -------------------------------------------------------
-    // Steps 3 + 4a-4e: Images and per-reel videos IN PARALLEL
-    // Key: call step.run WITHOUT await to get promises, then Promise.all
+    // Step 3: Images + Step 4a-4e: Start reel renders (PARALLEL)
     // -------------------------------------------------------
     const imageStep = step.run("generate-images", async () => {
       const result = await runImageGeneration(listing_id, packageId);
       return { succeeded: result.succeeded, failed: result.failed };
     });
 
-    const reelSteps = REEL_DAYS.map((day, i) =>
-      step.run(`generate-video-reel-${i + 1}`, async () => {
-        return await generateSingleReel(listing_id, packageId, day);
+    const startSteps = REEL_DAYS.map((day, i) =>
+      step.run(`start-reel-${i + 1}`, async () => {
+        return await startReelRender(listing_id, packageId, day);
       })
     );
 
-    await Promise.all([imageStep, ...reelSteps]);
+    const reelStartResults = await Promise.allSettled(startSteps);
+    await Promise.allSettled([imageStep]);
+
+    // -------------------------------------------------------
+    // Steps 5a-5e: Poll + finalize each reel (PARALLEL)
+    // Each reel polls independently with step.sleep between attempts.
+    // -------------------------------------------------------
+    const MAX_POLL_ATTEMPTS = 10;
+
+    type StartReelResult = {
+      renderId: string;
+      pieceId: string;
+      userId: string;
+      templateKey: string;
+    };
+
+    async function pollAndFinalizeReel(
+      day: number,
+      i: number,
+      startResult: PromiseSettledResult<StartReelResult>
+    ): Promise<void> {
+      if (startResult.status === "rejected") {
+        return; // piece already marked failed in startReelRender's catch
+      }
+
+      const { renderId, pieceId, userId, templateKey } = startResult.value;
+
+      let renderUrl: string | null = null;
+      for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
+        await step.sleep(`wait-reel-${i + 1}-${attempt}`, "5s");
+
+        const pollResult = await step.run(
+          `poll-reel-${i + 1}-${attempt}`,
+          async () => checkReelRenderStatus(renderId)
+        );
+
+        if (pollResult.status === "succeeded") {
+          renderUrl = pollResult.url ?? null;
+          break;
+        }
+
+        if (pollResult.status === "failed") {
+          await step.run(`fail-reel-${i + 1}`, async () =>
+            markPieceFailed(
+              pieceId,
+              `Creatomate render failed: ${pollResult.errorMessage}`
+            )
+          );
+          return;
+        }
+      }
+
+      // If the loop exits naturally without break (status still "rendering"
+      // on the final attempt), renderUrl stays null and we fall through to
+      // the timeout branch.
+      if (renderUrl) {
+        await step.run(`finalize-reel-${i + 1}`, async () =>
+          finalizeReelRender({
+            renderUrl,
+            pieceId,
+            listingId: listing_id,
+            userId,
+            dayNumber: day,
+            templateKey,
+          })
+        );
+      } else {
+        await step.run(`timeout-reel-${i + 1}`, async () =>
+          markPieceFailed(
+            pieceId,
+            "Creatomate render timed out after 10 polls (50s)"
+          )
+        );
+      }
+    }
+
+    // Fire all 5 reel poll-and-finalize blocks concurrently
+    await Promise.allSettled(
+      REEL_DAYS.map((day, i) =>
+        pollAndFinalizeReel(day, i, reelStartResults[i])
+      )
+    );
 
     // -------------------------------------------------------
     // Step 5: Finalize package status

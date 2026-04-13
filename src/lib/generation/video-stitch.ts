@@ -191,7 +191,7 @@ export async function stitchReelVideo(
     await supabase.from("cost_logs").insert({
       listing_id: listingId,
       content_piece_id: pieceId,
-      service: "transloadit", // using schema's allowed service enum for video processing
+      service: "creatomate",
       endpoint: "self-hosted:ffmpeg-stitch",
       cost_usd: 0,
       response_time_ms: elapsed,
