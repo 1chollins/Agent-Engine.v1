@@ -31,3 +31,21 @@ Pre-existing bugs discovered during Phase 1 Step 6 testing (April 13, 2026). Not
 **Observed:** DSC08950.jpg and DSC08903.jpg both have `sort_order=25` on listing `2d0895f4-3d83-4383-9352-b9d06b0b4095`.
 
 **Fix approach (later):** Compute `sort_order` server-side on insert (e.g., `SELECT COALESCE(MAX(sort_order), -1) + 1 FROM listing_photos WHERE listing_id = $1`), or serialize upload batches via a mutex flag that disables the drop zones while an upload is in progress (the `uploading` state exists but doesn't actually disable the drop zones).
+
+---
+
+## Post-Launch Roadmap (v1.1+)
+
+### Video-input Creatomate templates
+
+Discovered during Phase 1 Step 6 template selection (April 13). Many Creatomate marketplace templates use video element slots (`Video-N.source`) rather than image slots (`Image-N.source`), which require actual video clips as inputs. These templates cannot be used with the current all-photo pipeline.
+
+To enable video-input templates:
+1. Wire Runway multi-clip generation back into the pipeline (currently orphaned in `src/lib/generation/video-single-reel.ts`)
+2. Generate 4-5 Runway clips per reel from the photo picker's output
+3. Pass Runway clip URLs to `Video-N.source` slots in video-input templates
+4. Keep photo-input templates working in parallel (hybrid architecture)
+
+**Cost impact:** +$2-3 per reel using video-input templates (Runway at $0.50/clip × 4-5 clips).
+
+**Deferred because:** Phase 1 scope is to make the realtor's three original complaints (cropping, weak video, repeated photos) go away. Photo-input templates with Creatomate's built-in animation/transitions address "weak video" sufficiently for launch. Video-input templates are a v1.1 upgrade to add more visual variety if user feedback warrants it.
