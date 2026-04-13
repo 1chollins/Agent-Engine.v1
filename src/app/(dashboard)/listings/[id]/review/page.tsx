@@ -57,6 +57,9 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
   );
 
   const heroWithUrl = photosWithUrls.find((p) => p.is_hero) ?? photosWithUrls[0];
+  const verticalHeroWithUrl = typedListing.vertical_hero_photo_id
+    ? photosWithUrls.find((p) => p.id === typedListing.vertical_hero_photo_id)
+    : photosWithUrls.find((p) => p.orientation === "vertical");
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -144,6 +147,22 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
               <Image
                 src={heroWithUrl.signedUrl}
                 alt="Hero photo"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Vertical hero photo */}
+        {verticalHeroWithUrl?.signedUrl && (
+          <div className="mt-4">
+            <p className="mb-2 text-xs font-medium text-gray-500">VERTICAL HERO</p>
+            <div className="relative aspect-[9/16] w-48 overflow-hidden rounded-lg">
+              <Image
+                src={verticalHeroWithUrl.signedUrl}
+                alt="Vertical hero photo"
                 fill
                 className="object-cover"
                 unoptimized

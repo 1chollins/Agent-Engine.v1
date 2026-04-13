@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
-import { MIN_PHOTOS } from "@/types/listing";
+import { MIN_PHOTOS, MIN_VERTICAL_PHOTOS } from "@/types/listing";
 
 const PACKAGE_PRICE_CENTS = Number(process.env.PACKAGE_PRICE_CENTS || "9900");
 
@@ -40,6 +40,21 @@ export async function POST(request: NextRequest) {
   if (!count || count < MIN_PHOTOS) {
     return NextResponse.json(
       { error: `Need at least ${MIN_PHOTOS} photos (${count ?? 0} uploaded)` },
+      { status: 400 }
+    );
+  }
+
+  // Verify vertical photo count (0 or >= MIN_VERTICAL_PHOTOS)
+  const { count: verticalCount } = await supabase
+    .from("listing_photos")
+    .select("id", { count: "exact", head: true })
+    .eq("listing_id", listingId)
+    .eq("orientation", "vertical");
+
+  const vCount = verticalCount ?? 0;
+  if (vCount > 0 && vCount < MIN_VERTICAL_PHOTOS) {
+    return NextResponse.json(
+      { error: `Upload at least ${MIN_VERTICAL_PHOTOS} vertical photos or remove them all (${vCount} uploaded)` },
       { status: 400 }
     );
   }

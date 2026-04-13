@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { MIN_PHOTOS, MAX_PHOTOS } from "@/types/listing";
+import { MIN_PHOTOS, MAX_PHOTOS, MIN_VERTICAL_PHOTOS } from "@/types/listing";
 import type { ListingFormState } from "@/types/listing";
 
 const VALID_PROPERTY_TYPES = [
@@ -76,12 +76,17 @@ export async function submitListingForReview(listingId: string): Promise<Listing
 
   const { data: photos } = await supabase
     .from("listing_photos")
-    .select("id")
+    .select("id, orientation")
     .eq("listing_id", listingId);
 
   const count = photos?.length ?? 0;
   if (count < MIN_PHOTOS) return { error: `Upload at least ${MIN_PHOTOS} photos (${count} uploaded)`, success: null };
   if (count > MAX_PHOTOS) return { error: `Maximum ${MAX_PHOTOS} photos allowed`, success: null };
+
+  const verticalCount = photos?.filter((p) => p.orientation === "vertical").length ?? 0;
+  if (verticalCount > 0 && verticalCount < MIN_VERTICAL_PHOTOS) {
+    return { error: `Upload at least ${MIN_VERTICAL_PHOTOS} vertical photos or remove them all (${verticalCount} uploaded)`, success: null };
+  }
 
   const { error } = await supabase
     .from("listings")
