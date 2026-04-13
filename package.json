@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test:creatomate": "tsx scripts/test-creatomate.ts",
     "backfill:photos": "tsx scripts/backfill-photo-orientation.ts",
-    "cleanup:test-artifact": "tsx scripts/cleanup-test-artifact.ts"
+    "cleanup:test-artifact": "tsx scripts/cleanup-test-artifact.ts",
+    "test:selector": "tsx scripts/test-template-selector.ts"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
