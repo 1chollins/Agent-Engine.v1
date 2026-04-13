@@ -1,6 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { generatePostImages } from "./images-post";
-import { generateStoryImages } from "./images-story";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import type { ContentPiece } from "@/types/content";
@@ -11,7 +10,6 @@ export async function runImageGeneration(
 ): Promise<{ succeeded: number; failed: number }> {
   const supabase = createServiceClient();
 
-  // Load listing + brand profile
   const { data: listing, error: listingError } = await supabase
     .from("listings")
     .select("*")
@@ -32,7 +30,6 @@ export async function runImageGeneration(
     throw new Error(`Failed to load brand profile: ${brandError?.message}`);
   }
 
-  // Load content pieces (only posts and stories need images)
   const { data: pieces, error: piecesError } = await supabase
     .from("content_pieces")
     .select("*")
@@ -48,32 +45,11 @@ export async function runImageGeneration(
   const typedPieces = pieces as ContentPiece[];
 
   const postPieces = typedPieces.filter((p) => p.content_type === "post");
-  const storyPieces = typedPieces.filter((p) => p.content_type === "story");
 
-  // Generate post and story images in parallel
-  const [postResult, storyResult] = await Promise.allSettled([
-    generatePostImages(typedListing, typedBrand, postPieces, listingId),
-    generateStoryImages(typedListing, typedBrand, storyPieces, listingId),
-  ]);
+  const postResult = await generatePostImages(typedListing, typedBrand, postPieces, listingId);
 
-  let succeeded = 0;
-  let failed = 0;
-
-  if (postResult.status === "fulfilled") {
-    succeeded += postResult.value.results.length;
-    failed += postResult.value.errors.length;
-  } else {
-    console.error("Post image generation batch failed:", postResult.reason);
-    failed += postPieces.length;
-  }
-
-  if (storyResult.status === "fulfilled") {
-    succeeded += storyResult.value.results.length;
-    failed += storyResult.value.errors.length;
-  } else {
-    console.error("Story image generation batch failed:", storyResult.reason);
-    failed += storyPieces.length;
-  }
+  const succeeded = postResult.results.length;
+  const failed = postResult.errors.length;
 
   console.log(
     `Image generation complete for listing ${listingId}: ${succeeded} succeeded, ${failed} failed`

@@ -41,7 +41,7 @@ Pre-existing bugs discovered during Phase 1 Step 6 testing (April 13, 2026). Not
 Discovered during Phase 1 Step 6 template selection (April 13). Many Creatomate marketplace templates use video element slots (`Video-N.source`) rather than image slots (`Image-N.source`), which require actual video clips as inputs. These templates cannot be used with the current all-photo pipeline.
 
 To enable video-input templates:
-1. Wire Runway multi-clip generation back into the pipeline (currently orphaned in `src/lib/generation/video-single-reel.ts`)
+1. Wire Runway multi-clip generation back into the pipeline (currently orphaned in `src/lib/generation/video-clips.ts`; reel rendering moved to `src/lib/generation/creatomate-render.ts`)
 2. Generate 4-5 Runway clips per reel from the photo picker's output
 3. Pass Runway clip URLs to `Video-N.source` slots in video-input templates
 4. Keep photo-input templates working in parallel (hybrid architecture)
@@ -70,3 +70,7 @@ End-to-end test on 2026-04-13 (commit 15d3d94) produced 2/14 failed pieces in a 
 - Day 3 story: "Upload failed: fetch failed"
 
 Likely causes: Google Fonts CDN fetch intermittency, photo signed URL network error, or transient Supabase Storage issue during upload. Not a Phase 4 regression — pre-existing or flaky infrastructure dependency. Phase 5 rewrites stories to Creatomate which eliminates half this surface area. Investigate further if failure rate exceeds 10% in repeated runs; otherwise rely on retry-piece functionality.
+
+### Stories changed from PNG to MP4 (Phase 5)
+
+Stories changed from PNG to MP4 in Phase 5 (April 2026). Historical packages generated before Phase 5 have stories with `asset_type = 'image'` and `.png` files in storage. Packages generated from Phase 5 onward have stories with `asset_type = 'video'` and `.mp4` files. The dashboard UI branches on `asset_type` to render correctly for both. No migration is planned — old packages render their PNGs, new packages render their MP4s.

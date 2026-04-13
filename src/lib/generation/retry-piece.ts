@@ -1,11 +1,14 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { generateCaptionsBatch } from "./captions";
 import { generateStoryText } from "./stories";
-import { generateReelOverlays } from "./reel-overlays";
 import { generatePostImages } from "./images-post";
-import { generateStoryImages } from "./images-story";
-import { generateReelClips, getPhotoSignedUrls, REEL_MOTION_PROMPTS } from "./video-clips";
-import { stitchReelVideo } from "./video-stitch";
+import {
+  startReelRender,
+  startStoryRender,
+  finalizeReelRender,
+  finalizeStoryRender,
+  pollRenderToCompletion,
+} from "./creatomate-render";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import type { ContentPiece } from "@/types/content";
@@ -72,9 +75,9 @@ export async function retryPiece(pieceId: string): Promise<void> {
     if (typedPiece.content_type === "post") {
       await retryPost(typedPiece, typedListing, typedBrand, listingId, supabase);
     } else if (typedPiece.content_type === "story") {
-      await retryStory(typedPiece, typedListing, typedBrand, listingId, supabase);
+      await retryStory(typedPiece, listingId);
     } else if (typedPiece.content_type === "reel") {
-      await retryReel(typedPiece, typedListing, typedBrand, listingId, supabase);
+      await retryReel(typedPiece, listingId);
     }
 
     // Update package counts
@@ -128,151 +131,88 @@ async function retryPost(
     .eq("id", piece.id);
 }
 
-async function retryStory(
-  piece: ContentPiece,
-  listing: Listing,
-  brand: BrandProfile,
-  listingId: string,
-  supabase: ReturnType<typeof createServiceClient>
-) {
-  // Re-generate story text if missing
-  if (!piece.story_teaser) {
-    const stories = await generateStoryText(
-      listing,
-      brand,
-      [piece.day_number],
-      listingId
-    );
-    if (stories.length > 0) {
-      await supabase
-        .from("content_pieces")
-        .update({
-          story_teaser: stories[0].story_teaser,
-          story_cta: stories[0].story_cta,
-          caption_instagram: stories[0].caption_instagram,
-          caption_facebook: stories[0].caption_facebook,
-          hashtags: stories[0].hashtags,
-        })
-        .eq("id", piece.id);
-
-      // Re-fetch piece with updated text
-      const { data: updated } = await supabase
-        .from("content_pieces")
-        .select("*")
-        .eq("id", piece.id)
-        .single();
-      if (updated) piece = updated as ContentPiece;
-    }
-  }
-
-  // Re-generate image
-  const { errors } = await generateStoryImages(listing, brand, [piece], listingId);
-  if (errors.length > 0) throw new Error(errors.join("; "));
-
-  await supabase
-    .from("content_pieces")
-    .update({ status: "complete", generated_at: new Date().toISOString() })
-    .eq("id", piece.id);
-}
-
+// Captions/overlays already populated by text gen step; retry only re-renders the video via Creatomate
 async function retryReel(
   piece: ContentPiece,
-  listing: Listing,
-  brand: BrandProfile,
-  listingId: string,
-  supabase: ReturnType<typeof createServiceClient>
+  listingId: string
 ) {
-  // Re-generate captions if missing
-  if (!piece.caption_instagram) {
-    const captions = await generateCaptionsBatch(
-      listing,
-      brand,
-      [{ day_number: piece.day_number, content_type: "reel" }],
-      listingId
-    );
-    if (captions.length > 0) {
-      await supabase
-        .from("content_pieces")
-        .update({
-          caption_instagram: captions[0].caption_instagram,
-          caption_facebook: captions[0].caption_facebook,
-          hashtags: captions[0].hashtags,
-        })
-        .eq("id", piece.id);
-    }
-  }
-
-  // Re-generate overlays if missing
-  if (!piece.text_overlay) {
-    const overlays = await generateReelOverlays(
-      listing,
-      brand,
-      [piece.day_number],
-      listingId
-    );
-    if (overlays.length > 0) {
-      await supabase
-        .from("content_pieces")
-        .update({ text_overlay: overlays[0].text_overlay })
-        .eq("id", piece.id);
-    }
-  }
-
-  // Re-generate video clips + stitch
-  const photoIds = piece.source_photo_ids ?? [];
-  const photoUrls = await getPhotoSignedUrls(listingId, photoIds);
-  if (photoUrls.length === 0) throw new Error("No photos for reel");
-
-  const motionPrompts = photoUrls.map(
-    (_, i) => REEL_MOTION_PROMPTS[i % REEL_MOTION_PROMPTS.length]
+  const startResult = await startReelRender(
+    listingId,
+    piece.package_id,
+    piece.day_number
   );
 
-  const { clips, errors: clipErrors } = await generateReelClips(
-    photoUrls,
-    motionPrompts,
+  const renderUrl = await pollRenderToCompletion(startResult.renderId);
+
+  await finalizeReelRender({
+    renderUrl,
+    pieceId: startResult.pieceId,
     listingId,
-    piece.id
-  );
-
-  if (clips.length === 0) throw new Error(`All clips failed: ${clipErrors.join("; ")}`);
-
-  let overlayPhrases: string[] = [];
-  // Re-fetch piece for latest text_overlay
-  const { data: refreshed } = await supabase
-    .from("content_pieces")
-    .select("text_overlay")
-    .eq("id", piece.id)
-    .single();
-  if (refreshed?.text_overlay) {
-    try {
-      overlayPhrases = JSON.parse(refreshed.text_overlay as string);
-    } catch {
-      overlayPhrases = [];
-    }
-  }
-
-  const clipPaths = clips.sort((a, b) => a.clipIndex - b.clipIndex).map((c) => c.localPath);
-
-  const result = await stitchReelVideo({
-    clipPaths,
-    textOverlays: overlayPhrases,
-    listingId,
-    pieceId: piece.id,
-    userId: listing.user_id,
+    userId: startResult.userId,
     dayNumber: piece.day_number,
-    brandTone: brand.tone,
+    templateKey: startResult.templateKey,
   });
+}
 
-  await supabase
-    .from("content_pieces")
-    .update({
-      asset_path: result.outputPath,
-      asset_type: "video",
-      status: "complete",
-      generated_at: new Date().toISOString(),
-      error_message: null,
-    })
-    .eq("id", piece.id);
+// Story text re-generated if missing; retry re-renders the video via Creatomate
+async function retryStory(
+  piece: ContentPiece,
+  listingId: string
+) {
+  if (!piece.story_teaser) {
+    const supabase = createServiceClient();
+
+    const { data: listing } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("id", listingId)
+      .single();
+
+    const { data: brand } = await supabase
+      .from("brand_profiles")
+      .select("*")
+      .eq("user_id", (listing as Record<string, unknown>)?.user_id as string)
+      .single();
+
+    if (listing && brand) {
+      const stories = await generateStoryText(
+        listing as Listing,
+        brand as BrandProfile,
+        [piece.day_number],
+        listingId
+      );
+      if (stories.length > 0) {
+        await supabase
+          .from("content_pieces")
+          .update({
+            story_teaser: stories[0].story_teaser,
+            story_cta: stories[0].story_cta,
+            caption_instagram: stories[0].caption_instagram,
+            caption_facebook: stories[0].caption_facebook,
+            hashtags: stories[0].hashtags,
+          })
+          .eq("id", piece.id);
+      }
+    }
+  }
+
+  // Start Creatomate render, poll to completion, download + upload
+  const startResult = await startStoryRender(
+    listingId,
+    piece.package_id,
+    piece.day_number
+  );
+
+  const renderUrl = await pollRenderToCompletion(startResult.renderId);
+
+  await finalizeStoryRender({
+    renderUrl,
+    pieceId: startResult.pieceId,
+    listingId,
+    userId: startResult.userId,
+    dayNumber: piece.day_number,
+    templateKey: startResult.templateKey,
+  });
 }
 
 async function updatePackageCounts(
@@ -309,7 +249,6 @@ async function updatePackageCounts(
     })
     .eq("id", packageId);
 
-  // Also update listing status
   const { data: pkg } = await supabase
     .from("content_packages")
     .select("listing_id")

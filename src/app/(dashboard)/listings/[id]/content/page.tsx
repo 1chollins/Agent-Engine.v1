@@ -162,7 +162,7 @@ export default async function ListingContentPage({ params }: ContentPageProps) {
         <StatCard
           label="Stories"
           value={`${stories.filter((p) => p.status === "complete").length}/${stories.length}`}
-          sub="1080x1920 image"
+          sub="1080x1920 video"
         />
       </div>
 
