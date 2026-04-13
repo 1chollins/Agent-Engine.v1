@@ -36,10 +36,10 @@ export async function generateSingleReel(
 
   const typedPiece = piece as ContentPiece;
 
-  // Load listing for user_id
+  // Load full listing — template builders need address, city, beds, baths, sqft, etc.
   const { data: listing } = await supabase
     .from("listings")
-    .select("user_id")
+    .select("*")
     .eq("id", listingId)
     .single();
 
@@ -47,10 +47,10 @@ export async function generateSingleReel(
     return { succeeded: false, error: "Listing not found" };
   }
 
-  // Load brand for tone
+  // Load full brand — template builders need agent_name, logo_path, website, etc.
   const { data: brand } = await supabase
     .from("brand_profiles")
-    .select("tone")
+    .select("*")
     .eq("user_id", (listing as Record<string, unknown>).user_id as string)
     .single();
 
