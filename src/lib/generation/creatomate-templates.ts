@@ -7,30 +7,39 @@
  * Additional template keys will be added for day2-day14 as templates are built.
  */
 
-// Template keys — add "day2_property_tour", "day5_feature_spotlight", etc. later
-export type ReelTemplateKey = "day1_just_listed";
+// Template keys — add new templates as they're designed in Creatomate
+export type ContentTemplateKey = "day1_just_listed" | "story_triple_slide";
 
-export type ReelTemplate = {
+export type ContentTemplate = {
   id: string;
   label: string;
   heroLabel: string;
   description: string;
   requiredSlots: string[];
+  templateType: "reel" | "story";
+  photoCount: number;
+  aspectRatio: string;
+  duration: number;
 };
 
-const ENV_KEYS: Record<ReelTemplateKey, string> = {
+const ENV_KEYS: Record<ContentTemplateKey, string> = {
   day1_just_listed: "CREATOMATE_TEMPLATE_DAY1_JUST_LISTED",
+  story_triple_slide: "CREATOMATE_TEMPLATE_STORY_TRIPLE_SLIDE",
 };
 
 const TEMPLATE_DEFS: Record<
-  ReelTemplateKey,
-  Omit<ReelTemplate, "id">
+  ContentTemplateKey,
+  Omit<ContentTemplate, "id">
 > = {
   day1_just_listed: {
     label: "Just Listed — Property Stats",
     heroLabel: "Just Listed",
     description:
       "Hero reel with 5 photos, full property stats, and agent outro. Used for Day 1.",
+    templateType: "reel",
+    photoCount: 5,
+    aspectRatio: "9:16",
+    duration: 30,
     requiredSlots: [
       "Text",
       "Address",
@@ -48,17 +57,33 @@ const TEMPLATE_DEFS: Record<
       "Picture",
     ],
   },
+  story_triple_slide: {
+    label: "Story — Triple Slide",
+    heroLabel: "Triple Slide",
+    description:
+      "3-photo story with city/state text overlay. 13s duration, 9:16 vertical.",
+    templateType: "story",
+    photoCount: 3,
+    aspectRatio: "9:16",
+    duration: 13,
+    requiredSlots: [
+      "Image-1",
+      "Image-2",
+      "Image-3",
+      "Text",
+    ],
+  },
 };
 
-export const REEL_TEMPLATES: Record<ReelTemplateKey, ReelTemplate> = Object.fromEntries(
-  (Object.keys(TEMPLATE_DEFS) as ReelTemplateKey[]).map((key) => {
+export const CONTENT_TEMPLATES: Record<ContentTemplateKey, ContentTemplate> = Object.fromEntries(
+  (Object.keys(TEMPLATE_DEFS) as ContentTemplateKey[]).map((key) => {
     const envKey = ENV_KEYS[key];
     const id = process.env[envKey] ?? "";
     return [key, { ...TEMPLATE_DEFS[key], id }];
   })
-) as Record<ReelTemplateKey, ReelTemplate>;
+) as Record<ContentTemplateKey, ContentTemplate>;
 
-export function getTemplate(key: ReelTemplateKey): ReelTemplate {
+export function getTemplate(key: ContentTemplateKey): ContentTemplate {
   const envKey = ENV_KEYS[key];
   const id = process.env[envKey];
 

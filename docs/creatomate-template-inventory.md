@@ -35,19 +35,24 @@
 
 ---
 
-## Template 2: TBD
-- **Template ID**: *(paste UUID from Creatomate dashboard)*
-- **Env var**: `CREATOMATE_TEMPLATE_DAY2_TBD`
-- **Theme**:
-- **Assigned to**: Day 2
-- **Aspect ratio**: 9:16 vertical
-- **Duration**:
-- **Photo slot count**:
+## Template 2: Story — Triple Slide
+- **Template ID**: `cb090682-5313-44e9-8973-183251e07dfd`
+- **Env var**: `CREATOMATE_TEMPLATE_STORY_TRIPLE_SLIDE`
+- **Theme**: Triple Slide
+- **Assigned to**: TBD (story slot)
+- **Aspect ratio**: 9:16 vertical (720x1280)
+- **Duration**: 13 seconds
+- **Photo slot count**: 3
 - **Full modifications structure**:
 ```json
-{}
+{
+  "Image-1.source": "<signed_url>",
+  "Image-2.source": "<signed_url>",
+  "Image-3.source": "<signed_url>",
+  "Text.text": "Austin, TX"
+}
 ```
-- **Notes**:
+- **Notes**: Builder function: `buildTripleSlideStoryModifications()` in `src/lib/generation/creatomate.ts`. Not yet wired into pipeline.
 
 ---
 
@@ -153,7 +158,7 @@ For each new template:
 1. Design template in Creatomate editor
 2. Copy template UUID from Creatomate dashboard
 3. Add UUID to `.env.local` as `CREATOMATE_TEMPLATE_DAY{N}_{NAME}`
-4. Add key to `ReelTemplateKey` union in `creatomate-templates.ts`
+4. Add key to `ContentTemplateKey` union in `creatomate-templates.ts`
 5. Add env var mapping to `ENV_KEYS`
 6. Add template definition to `TEMPLATE_DEFS` with `requiredSlots`
 7. Write `build{Name}Modifications()` function in `creatomate.ts`

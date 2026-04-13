@@ -1,7 +1,7 @@
 import { Client } from "creatomate";
 import { createServiceClient } from "@/lib/supabase/server";
 import { getTemplate } from "./creatomate-templates";
-import type { ReelTemplateKey } from "./creatomate-templates";
+import type { ContentTemplateKey } from "./creatomate-templates";
 
 function getCreatomateClient(): Client {
   const apiKey = process.env.CREATOMATE_API_KEY;
@@ -14,7 +14,7 @@ function getCreatomateClient(): Client {
 }
 
 type RenderReelParams = {
-  templateKey: ReelTemplateKey;
+  templateKey: ContentTemplateKey;
   modifications: Record<string, string>;
   listingId?: string;
   waitForCompletion?: boolean;
@@ -149,5 +149,30 @@ export function buildJustListedModifications(
     "Phone-Number.text": phone,
     "Email.text": email,
     "Picture.source": agentHeadshotUrl,
+  };
+}
+
+type TripleSlideStoryParams = {
+  photoUrls: string[];
+  city: string;
+  state: string;
+};
+
+export function buildTripleSlideStoryModifications(
+  params: TripleSlideStoryParams
+): Record<string, string> {
+  const { photoUrls, city, state } = params;
+
+  if (photoUrls.length !== 3) {
+    throw new Error(
+      `buildTripleSlideStoryModifications requires exactly 3 photo URLs, got ${photoUrls.length}`
+    );
+  }
+
+  return {
+    "Image-1.source": photoUrls[0],
+    "Image-2.source": photoUrls[1],
+    "Image-3.source": photoUrls[2],
+    "Text.text": `${city}, ${state}`,
   };
 }
