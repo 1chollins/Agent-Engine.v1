@@ -248,16 +248,22 @@ export const generatePackage = inngest.createFunction(
       // on the final attempt), renderUrl stays null and we fall through to
       // the timeout branch.
       if (renderUrl) {
-        await step.run(`finalize-reel-${i + 1}`, async () =>
-          finalizeReelRender({
-            renderUrl,
-            pieceId,
-            listingId: listing_id,
-            userId,
-            dayNumber: day,
-            templateKey,
-          })
-        );
+        try {
+          await step.run(`finalize-reel-${i + 1}`, async () =>
+            finalizeReelRender({
+              renderUrl,
+              pieceId,
+              listingId: listing_id,
+              userId,
+              dayNumber: day,
+              templateKey,
+            })
+          );
+        } catch {
+          await step.run(`fail-finalize-reel-${i + 1}`, async () =>
+            markPieceFailed(pieceId, "Reel finalize failed after step retries")
+          );
+        }
       } else {
         await step.run(`timeout-reel-${i + 1}`, async () =>
           markPieceFailed(
@@ -308,16 +314,22 @@ export const generatePackage = inngest.createFunction(
       // on the final attempt), renderUrl stays null and we fall through to
       // the timeout branch.
       if (renderUrl) {
-        await step.run(`finalize-story-${i + 1}`, async () =>
-          finalizeStoryRender({
-            renderUrl,
-            pieceId,
-            listingId: listing_id,
-            userId,
-            dayNumber: day,
-            templateKey,
-          })
-        );
+        try {
+          await step.run(`finalize-story-${i + 1}`, async () =>
+            finalizeStoryRender({
+              renderUrl,
+              pieceId,
+              listingId: listing_id,
+              userId,
+              dayNumber: day,
+              templateKey,
+            })
+          );
+        } catch {
+          await step.run(`fail-finalize-story-${i + 1}`, async () =>
+            markPieceFailed(pieceId, "Story finalize failed after step retries")
+          );
+        }
       } else {
         await step.run(`timeout-story-${i + 1}`, async () =>
           markPieceFailed(

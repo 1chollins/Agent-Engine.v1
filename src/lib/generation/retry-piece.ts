@@ -65,7 +65,7 @@ export async function retryPiece(pieceId: string): Promise<void> {
   await supabase
     .from("content_pieces")
     .update({
-      status: "processing",
+      status: "pending",
       error_message: null,
       retry_count: typedPiece.retry_count + 1,
     })

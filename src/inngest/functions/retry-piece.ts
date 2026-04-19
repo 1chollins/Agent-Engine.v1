@@ -4,7 +4,7 @@ import { retryPiece } from "@/lib/generation/retry-piece";
 export const retryPieceFunction = inngest.createFunction(
   {
     id: "retry-content-piece",
-    retries: 2,
+    retries: 0,
     triggers: [{ event: "piece/retry.requested" }],
   },
   async ({ event, step }) => {
