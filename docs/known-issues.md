@@ -79,6 +79,10 @@ Observed across multiple code paths — this is an infrastructure-level intermit
 
 **Mitigation:** Failed pieces can be retried via the retry-piece path rebuilt in Phase 5B, which uses the same Creatomate flow for reels and stories. Investigate further if failure rate exceeds 10% in production; otherwise rely on retry functionality. Consider adding a single automatic retry with 2s delay inside finalize functions if the pattern persists.
 
+### text-batch.ts marked reels and stories complete prematurely
+
+`text-batch.ts` was marking reels and stories as 'complete' after text generation, causing the idempotency guard in `startReelRender`/`startStoryRender` to skip Creatomate renders entirely. Fixed in 65a45ff — reels and stories now stay 'pending' after text gen.
+
 ### Stories changed from PNG to MP4 (Phase 5)
 
 Stories changed from PNG to MP4 in Phase 5 (April 2026). Historical packages generated before Phase 5 have stories with `asset_type = 'image'` and `.png` files in storage. Packages generated from Phase 5 onward have stories with `asset_type = 'video'` and `.mp4` files. The dashboard UI branches on `asset_type` to render correctly for both. No migration is planned — old packages render their PNGs, new packages render their MP4s.
