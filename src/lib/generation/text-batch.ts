@@ -14,7 +14,7 @@ type PieceUpdate = {
   text_overlay?: string;
   story_teaser?: string;
   story_cta?: string;
-  status: "complete" | "failed";
+  status: "complete" | "pending" | "failed";
   error_message?: string;
   generated_at?: string;
 };
@@ -109,7 +109,7 @@ export async function runTextGeneration(
           caption_instagram: result.caption_instagram,
           caption_facebook: result.caption_facebook,
           hashtags: result.hashtags,
-          status: "complete",
+          status: piece.content_type === "post" ? "complete" : "pending",
           generated_at: new Date().toISOString(),
         });
       }
@@ -142,7 +142,7 @@ export async function runTextGeneration(
         caption_instagram: result.caption_instagram,
         caption_facebook: result.caption_facebook,
         hashtags: result.hashtags,
-        status: "complete",
+        status: "pending",
         generated_at: new Date().toISOString(),
       });
     }
