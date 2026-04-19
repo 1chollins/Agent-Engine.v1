@@ -61,6 +61,7 @@ export type ListingPhoto = {
   is_hero: boolean;
   orientation: "horizontal" | "vertical" | "square" | null;
   uploaded_at: string;
+  previewUrl?: string;
 };
 
 export type ListingFormState = {
