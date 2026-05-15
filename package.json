@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test:creatomate": "tsx scripts/test-creatomate.ts",
     "backfill:photos": "tsx scripts/backfill-photo-orientation.ts",
+    "backfill:photo-tags": "tsx scripts/backfill-photo-tags.ts",
     "cleanup:test-artifact": "tsx scripts/cleanup-test-artifact.ts",
     "test:selector": "tsx scripts/test-template-selector.ts"
   },

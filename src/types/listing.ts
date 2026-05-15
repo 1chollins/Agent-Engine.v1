@@ -48,6 +48,27 @@ export type Listing = {
   updated_at: string;
 };
 
+export const CONTENT_TAGS = [
+  "kitchen",
+  "bathroom",
+  "bedroom",
+  "living_room",
+  "dining_room",
+  "exterior_front",
+  "exterior_back",
+  "exterior_aerial",
+  "pool",
+  "garage",
+  "office",
+  "closet",
+  "hallway",
+  "detail_shot",
+  "view",
+  "other",
+] as const;
+
+export type ContentTag = (typeof CONTENT_TAGS)[number];
+
 export type ListingPhoto = {
   id: string;
   listing_id: string;
@@ -60,6 +81,7 @@ export type ListingPhoto = {
   sort_order: number;
   is_hero: boolean;
   orientation: "horizontal" | "vertical" | "square" | null;
+  content_tag: ContentTag | null;
   uploaded_at: string;
   previewUrl?: string;
 };
