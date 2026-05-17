@@ -241,3 +241,37 @@ export async function getCachedClipOrSubmit(params: {
     return { status: "failed", error };
   }
 }
+
+// Resolves Kling video URLs for a piece's photo IDs, preserving input order.
+// Returns null if ANY photo lacks a complete clip — callers fall back to
+// static-photo rendering.
+export async function getMotionClipsForPiece(
+  photoIds: string[]
+): Promise<string[] | null> {
+  if (photoIds.length === 0) return null;
+
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from("kling_clips")
+    .select("photo_id, video_url")
+    .in("photo_id", photoIds)
+    .eq("status", "complete");
+
+  const urlByPhotoId = new Map<string, string>();
+  for (const row of (data ?? []) as {
+    photo_id: string;
+    video_url: string | null;
+  }[]) {
+    if (row.video_url) {
+      urlByPhotoId.set(row.photo_id, row.video_url);
+    }
+  }
+
+  const result: string[] = [];
+  for (const id of photoIds) {
+    const url = urlByPhotoId.get(id);
+    if (!url) return null;
+    result.push(url);
+  }
+  return result;
+}

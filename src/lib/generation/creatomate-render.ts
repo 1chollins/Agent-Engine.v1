@@ -1,7 +1,7 @@
 import { Client } from "creatomate";
 import { createServiceClient } from "@/lib/supabase/server";
 import { getPhotoSignedUrls } from "./video-clips";
-import { getTemplate } from "./creatomate-templates";
+import { getTemplate, getMotionTemplateId } from "./creatomate-templates";
 import type { ContentTemplateKey } from "./creatomate-templates";
 import {
   buildJustListedModifications,
@@ -9,7 +9,33 @@ import {
   buildTripleSlideStoryModifications,
   buildFourSceneStoryModifications,
 } from "./creatomate";
+import { MOTION_PIPELINE_ENABLED } from "./motion-config";
+import { getMotionClipsForPiece } from "./clip-cache";
 import type { ContentPiece } from "@/types/content";
+
+async function resolveRenderTarget(args: {
+  templateKey: ContentTemplateKey;
+  photoIds: string[];
+  listingId: string;
+}): Promise<{ templateId: string; mediaUrls: string[] }> {
+  if (MOTION_PIPELINE_ENABLED) {
+    const motionUrls = await getMotionClipsForPiece(args.photoIds);
+    if (motionUrls) {
+      return {
+        templateId: getMotionTemplateId(args.templateKey),
+        mediaUrls: motionUrls,
+      };
+    }
+  }
+  const photoUrls = await getPhotoSignedUrls(args.listingId, args.photoIds);
+  if (photoUrls.length === 0) {
+    throw new Error("Could not get signed URLs for photos");
+  }
+  return {
+    templateId: getTemplate(args.templateKey).id,
+    mediaUrls: photoUrls,
+  };
+}
 
 function getCreatomateClient(): Client {
   const apiKey = process.env.CREATOMATE_API_KEY;
@@ -100,25 +126,23 @@ export async function startReelRender(
       throw new Error("No photos assigned to this reel");
     }
 
-    const photoUrls = await getPhotoSignedUrls(listingId, photoIds);
-    if (photoUrls.length === 0) {
-      throw new Error("Could not get signed URLs for photos");
-    }
+    const { templateId, mediaUrls } = await resolveRenderTarget({
+      templateKey: templateKey as ContentTemplateKey,
+      photoIds,
+      listingId,
+    });
 
-    // Build modifications based on template
     const modifications = await buildModificationsForTemplate(
       templateKey as ContentTemplateKey,
-      photoUrls,
+      mediaUrls,
       ls,
       brand as Record<string, unknown> | null,
       supabase
     );
 
-    // Start render (non-blocking)
-    const template = getTemplate(templateKey as ContentTemplateKey);
     const client = getCreatomateClient();
     const renders = await client.startRender({
-      templateId: template.id,
+      templateId,
       modifications,
     });
 
@@ -213,23 +237,23 @@ export async function startStoryRender(
       throw new Error("No photos assigned to this story");
     }
 
-    const photoUrls = await getPhotoSignedUrls(listingId, photoIds);
-    if (photoUrls.length === 0) {
-      throw new Error("Could not get signed URLs for photos");
-    }
+    const { templateId, mediaUrls } = await resolveRenderTarget({
+      templateKey: templateKey as ContentTemplateKey,
+      photoIds,
+      listingId,
+    });
 
     const modifications = await buildModificationsForTemplate(
       templateKey as ContentTemplateKey,
-      photoUrls,
+      mediaUrls,
       ls,
       brand as Record<string, unknown> | null,
       supabase
     );
 
-    const template = getTemplate(templateKey as ContentTemplateKey);
     const client = getCreatomateClient();
     const renders = await client.startRender({
-      templateId: template.id,
+      templateId,
       modifications,
     });
 

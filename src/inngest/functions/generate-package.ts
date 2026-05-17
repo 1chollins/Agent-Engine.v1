@@ -21,11 +21,10 @@ import {
   MAX_KLING_POLL_ATTEMPTS,
   KLING_POLL_INTERVAL,
 } from "@/lib/generation/motion-stage";
+import { MOTION_PIPELINE_ENABLED } from "@/lib/generation/motion-config";
 
 const REEL_DAYS = [2, 5, 8, 11, 14];
 const STORY_DAYS = [3, 6, 9, 12];
-
-const MOTION_PIPELINE_ENABLED = process.env.MOTION_PIPELINE_ENABLED === "true";
 
 export const generatePackage = inngest.createFunction(
   {

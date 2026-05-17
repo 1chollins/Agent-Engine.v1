@@ -29,6 +29,28 @@ const ENV_KEYS: Record<ContentTemplateKey, string> = {
   story_four_scene: "CREATOMATE_TEMPLATE_STORY_FOUR_SCENE",
 };
 
+// Motion derivatives: same element names, image elements flipped to video.
+// One env var per existing template; the key is "<base env var>_MOTION".
+const MOTION_ENV_KEYS: Record<ContentTemplateKey, string> = {
+  day1_just_listed: "CREATOMATE_TEMPLATE_DAY1_JUST_LISTED_MOTION",
+  story_triple_slide: "CREATOMATE_TEMPLATE_STORY_TRIPLE_SLIDE_MOTION",
+  reel_simple_showcase: "CREATOMATE_TEMPLATE_REEL_SIMPLE_SHOWCASE_MOTION",
+  story_four_scene: "CREATOMATE_TEMPLATE_STORY_FOUR_SCENE_MOTION",
+};
+
+export function getMotionTemplateId(key: ContentTemplateKey): string {
+  const envKey = MOTION_ENV_KEYS[key];
+  const id = process.env[envKey];
+
+  if (!id) {
+    throw new Error(
+      `${envKey} is not set in .env.local. Add it with your Creatomate motion template ID.`
+    );
+  }
+
+  return id;
+}
+
 const TEMPLATE_DEFS: Record<
   ContentTemplateKey,
   Omit<ContentTemplate, "id">
