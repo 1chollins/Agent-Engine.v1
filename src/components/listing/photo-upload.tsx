@@ -140,6 +140,13 @@ export function PhotoUpload({
           body: JSON.stringify({ photo_id: data.id, file_path: filePath }),
         }).catch(() => {});
 
+        // Fire-and-forget: classify the photo's content tag (kitchen, bedroom, etc.)
+        fetch("/api/photos/tag", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ photo_id: data.id, file_path: filePath }),
+        }).catch(() => {});
+
         newPhotos.push({
           ...data,
           previewUrl: URL.createObjectURL(file),

@@ -14,9 +14,18 @@ import {
 } from "@/lib/generation/creatomate-render";
 import { pickPhotosForPackage } from "@/lib/generation/photo-picker";
 import { selectTemplate, getPhotoCountForTemplate } from "@/lib/generation/template-selector";
+import {
+  submitAllClips,
+  checkAndFinalizePending,
+  logClipOutcomes,
+  MAX_KLING_POLL_ATTEMPTS,
+  KLING_POLL_INTERVAL,
+} from "@/lib/generation/motion-stage";
 
 const REEL_DAYS = [2, 5, 8, 11, 14];
 const STORY_DAYS = [3, 6, 9, 12];
+
+const MOTION_PIPELINE_ENABLED = process.env.MOTION_PIPELINE_ENABLED === "true";
 
 export const generatePackage = inngest.createFunction(
   {
@@ -170,6 +179,32 @@ export const generatePackage = inngest.createFunction(
       const result = await runTextGeneration(listing_id, packageId);
       return { succeeded: result.succeeded, failed: result.failed };
     });
+
+    // -------------------------------------------------------
+    // Step 2.5 (gated): Kling motion clip submit + poll + finalize.
+    // Self-contained — runs to completion before image/reel/story steps
+    // begin, so it does NOT interleave with the existing parallel sync.
+    // Flag-off: this block is skipped entirely and behavior is unchanged.
+    // -------------------------------------------------------
+    if (MOTION_PIPELINE_ENABLED) {
+      const submitResults = await step.run("kling-submit-all", () =>
+        submitAllClips({ packageId, listingId: listing_id })
+      );
+      let pending = submitResults.filter(
+        (r) => r.status === "submitted" || r.status === "processing"
+      );
+      for (
+        let attempt = 0;
+        attempt < MAX_KLING_POLL_ATTEMPTS && pending.length > 0;
+        attempt++
+      ) {
+        await step.sleep(`kling-wait-${attempt}`, KLING_POLL_INTERVAL);
+        pending = await step.run(`kling-poll-${attempt}`, () =>
+          checkAndFinalizePending(pending)
+        );
+      }
+      await step.run("kling-summary", () => logClipOutcomes(listing_id));
+    }
 
     // -------------------------------------------------------
     // Step 3: Images + Steps 4a-4i: Start all reel + story renders (PARALLEL)
