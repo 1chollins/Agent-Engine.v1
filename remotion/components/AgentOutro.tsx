@@ -22,8 +22,9 @@ type AgentOutroProps = {
   enterFrame: number;
 };
 
-const FONT_STACK =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+import { FONT_FAMILY } from "../lib/fonts";
+
+const FONT_STACK = FONT_FAMILY;
 
 export const AgentOutro: React.FC<AgentOutroProps> = ({
   agentName,

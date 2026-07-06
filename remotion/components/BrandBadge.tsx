@@ -9,6 +9,7 @@ import {
   interpolate,
   useCurrentFrame,
 } from "remotion";
+import { FONT_FAMILY } from "../lib/fonts";
 
 type BrandBadgeProps = {
   brandName: string;
@@ -54,8 +55,7 @@ export const BrandBadge: React.FC<BrandBadgeProps> = ({
           <div
             style={{
               color: "white",
-              fontFamily:
-                '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              fontFamily: FONT_FAMILY,
               fontSize: 40,
               fontWeight: 600,
               letterSpacing: "0.06em",

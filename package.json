@@ -16,6 +16,7 @@
   "dependencies": {
     "@fal-ai/client": "^1.10.1",
     "@remotion/cli": "4.0.484",
+    "@remotion/lambda": "4.0.484",
     "@remotion/transitions": "4.0.484",
     "@resvg/resvg-js": "^2.6.2",
     "@supabase/ssr": "^0.10.0",

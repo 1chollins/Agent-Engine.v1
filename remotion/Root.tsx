@@ -1,5 +1,6 @@
 import React from "react";
 import { Composition } from "remotion";
+import { loadInterFonts } from "./lib/fonts";
 import {
   TripleSlideStory,
   tripleSlideStorySchema,
@@ -44,6 +45,8 @@ import {
  * Default props are placeholders for Remotion Studio preview only —
  * production props are injected per render.
  */
+
+loadInterFonts();
 
 const PLACEHOLDER_PHOTOS = [
   "https://picsum.photos/seed/exterior/1600/1067",

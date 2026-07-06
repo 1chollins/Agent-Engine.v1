@@ -10,6 +10,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { FONT_FAMILY } from "../lib/fonts";
 
 type TextOverlayProps = {
   text: string;
@@ -57,8 +58,7 @@ export const TextOverlay: React.FC<TextOverlayProps> = ({
           opacity,
           transform: `translateY(${translateY}px)`,
           color: "white",
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontFamily: FONT_FAMILY,
           fontSize,
           fontWeight: 600,
           letterSpacing: uppercase ? "0.25em" : "0.04em",

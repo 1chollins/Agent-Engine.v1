@@ -10,6 +10,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { FONT_FAMILY } from "../lib/fonts";
 
 type DetailsPanelProps = {
   lines: string[];
@@ -51,8 +52,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                 opacity: interpolate(driver, [0, 1], [0, 1]),
                 transform: `translateY(${interpolate(driver, [0, 1], [24, 0])}px)`,
                 color: "white",
-                fontFamily:
-                  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                fontFamily: FONT_FAMILY,
                 fontSize: 52,
                 fontWeight: 600,
                 letterSpacing: "0.04em",
