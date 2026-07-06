@@ -27,3 +27,5 @@ next-env.d.ts
 # Backfill script output logs
 scripts/backfill-output.txt
 tmp/
+.vercel
+.env*.local
