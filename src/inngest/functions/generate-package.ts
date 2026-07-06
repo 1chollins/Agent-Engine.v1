@@ -11,7 +11,7 @@ import {
   finalizeReelRender,
   finalizeStoryRender,
   markPieceFailed,
-} from "@/lib/generation/creatomate-render";
+} from "@/lib/generation/remotion-render";
 import { pickPhotosForPackage } from "@/lib/generation/photo-picker";
 import { selectTemplate, getPhotoCountForTemplate } from "@/lib/generation/template-selector";
 import {
@@ -133,7 +133,11 @@ export const generatePackage = inngest.createFunction(
 
         for (const entry of CONTENT_CALENDAR) {
           if (entry.type === "reel" || entry.type === "story") {
-            const key = selectTemplate({ contentType: entry.type, dayNumber: entry.day });
+            const key = selectTemplate({
+              contentType: entry.type,
+              dayNumber: entry.day,
+              listingId: listing_id,
+            });
             templateSelections[entry.day] = key;
             photoCounts[entry.day] = getPhotoCountForTemplate(key);
           } else {
@@ -233,10 +237,13 @@ export const generatePackage = inngest.createFunction(
     // Steps 5: Poll + finalize each reel and story (ALL PARALLEL)
     // Each piece polls independently with step.sleep between attempts.
     // -------------------------------------------------------
-    const MAX_POLL_ATTEMPTS = 10;
+    // 20 polls × 5s = 100s budget — the 30s hero reel can exceed 50s on
+    // Lambda while the account concurrency quota is still low.
+    const MAX_POLL_ATTEMPTS = 20;
 
     type StartRenderResult = {
       renderId: string;
+      bucketName: string;
       pieceId: string;
       userId: string;
       templateKey: string;
@@ -251,19 +258,22 @@ export const generatePackage = inngest.createFunction(
         return; // piece already marked failed in startReelRender's catch
       }
 
-      const { renderId, pieceId, userId, templateKey } = startResult.value;
+      const { renderId, bucketName, pieceId, userId, templateKey } =
+        startResult.value;
 
       let renderUrl: string | null = null;
+      let renderCost: number | undefined;
       for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
         await step.sleep(`wait-reel-${i + 1}-${attempt}`, "5s");
 
         const pollResult = await step.run(
           `poll-reel-${i + 1}-${attempt}`,
-          async () => checkRenderStatus(renderId)
+          async () => checkRenderStatus(renderId, bucketName)
         );
 
         if (pollResult.status === "succeeded") {
           renderUrl = pollResult.url ?? null;
+          renderCost = pollResult.costUsd;
           break;
         }
 
@@ -271,7 +281,7 @@ export const generatePackage = inngest.createFunction(
           await step.run(`fail-reel-${i + 1}`, async () =>
             markPieceFailed(
               pieceId,
-              `Creatomate render failed: ${pollResult.errorMessage}`
+              `Lambda render failed: ${pollResult.errorMessage}`
             )
           );
           return;
@@ -291,6 +301,7 @@ export const generatePackage = inngest.createFunction(
               userId,
               dayNumber: day,
               templateKey,
+              costUsd: renderCost,
             })
           );
         } catch {
@@ -302,7 +313,7 @@ export const generatePackage = inngest.createFunction(
         await step.run(`timeout-reel-${i + 1}`, async () =>
           markPieceFailed(
             pieceId,
-            "Creatomate render timed out after 10 polls (50s)"
+            "Lambda render timed out after 20 polls (100s)"
           )
         );
       }
@@ -317,19 +328,22 @@ export const generatePackage = inngest.createFunction(
         return; // piece already marked failed in startStoryRender's catch
       }
 
-      const { renderId, pieceId, userId, templateKey } = startResult.value;
+      const { renderId, bucketName, pieceId, userId, templateKey } =
+        startResult.value;
 
       let renderUrl: string | null = null;
+      let renderCost: number | undefined;
       for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
         await step.sleep(`wait-story-${i + 1}-${attempt}`, "5s");
 
         const pollResult = await step.run(
           `poll-story-${i + 1}-${attempt}`,
-          async () => checkRenderStatus(renderId)
+          async () => checkRenderStatus(renderId, bucketName)
         );
 
         if (pollResult.status === "succeeded") {
           renderUrl = pollResult.url ?? null;
+          renderCost = pollResult.costUsd;
           break;
         }
 
@@ -337,7 +351,7 @@ export const generatePackage = inngest.createFunction(
           await step.run(`fail-story-${i + 1}`, async () =>
             markPieceFailed(
               pieceId,
-              `Creatomate render failed: ${pollResult.errorMessage}`
+              `Lambda render failed: ${pollResult.errorMessage}`
             )
           );
           return;
@@ -357,6 +371,7 @@ export const generatePackage = inngest.createFunction(
               userId,
               dayNumber: day,
               templateKey,
+              costUsd: renderCost,
             })
           );
         } catch {
@@ -368,7 +383,7 @@ export const generatePackage = inngest.createFunction(
         await step.run(`timeout-story-${i + 1}`, async () =>
           markPieceFailed(
             pieceId,
-            "Creatomate render timed out after 10 polls (50s)"
+            "Lambda render timed out after 20 polls (100s)"
           )
         );
       }

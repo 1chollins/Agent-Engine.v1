@@ -1,13 +1,13 @@
-import { CONTENT_TEMPLATES } from "./creatomate-templates";
-import type { ContentTemplateKey } from "./creatomate-templates";
+import {
+  COMPOSITION_DEFS,
+  REEL_VARIANT_KEYS,
+  STORY_VARIANT_KEYS,
+  hashString,
+} from "./composition-map";
+import type { CompositionTemplateKey } from "./composition-map";
 
 const REEL_DAYS = [2, 5, 8, 11, 14] as const;
 const STORY_DAYS = [3, 6, 9, 12] as const;
-
-const STORY_TEMPLATES: ContentTemplateKey[] = [
-  "story_triple_slide",
-  "story_four_scene",
-];
 
 function validateDayAndType(contentType: "reel" | "story", dayNumber: number): void {
   if (contentType === "reel" && !(REEL_DAYS as readonly number[]).includes(dayNumber)) {
@@ -22,24 +22,38 @@ function validateDayAndType(contentType: "reel" | "story", dayNumber: number): v
   }
 }
 
+/**
+ * Seeded template selection — deterministic per listing, evenly
+ * distributed across variants (replaces Math.random, which had a
+ * selection bias and made retries non-reproducible).
+ *
+ * Day 2 always gets the Just Listed hero reel. Other reel/story days
+ * rotate through the variant lists, offset by a listing-derived hash so
+ * different listings start at different variants.
+ */
 export function selectTemplate(params: {
   contentType: "reel" | "story";
   dayNumber: number;
-}): ContentTemplateKey {
-  const { contentType, dayNumber } = params;
+  listingId: string;
+}): CompositionTemplateKey {
+  const { contentType, dayNumber, listingId } = params;
 
   validateDayAndType(contentType, dayNumber);
 
   if (contentType === "reel") {
     if (dayNumber === 2) return "day1_just_listed";
-    return "reel_simple_showcase";
+    const dayIndex = (REEL_DAYS as readonly number[]).indexOf(dayNumber);
+    return REEL_VARIANT_KEYS[
+      (hashString(listingId) + dayIndex) % REEL_VARIANT_KEYS.length
+    ];
   }
 
-  // Story: random selection
-  const index = Math.floor(Math.random() * STORY_TEMPLATES.length);
-  return STORY_TEMPLATES[index];
+  const dayIndex = (STORY_DAYS as readonly number[]).indexOf(dayNumber);
+  return STORY_VARIANT_KEYS[
+    (hashString(listingId) + dayIndex) % STORY_VARIANT_KEYS.length
+  ];
 }
 
-export function getPhotoCountForTemplate(key: ContentTemplateKey): number {
-  return CONTENT_TEMPLATES[key].photoCount;
+export function getPhotoCountForTemplate(key: CompositionTemplateKey): number {
+  return COMPOSITION_DEFS[key].photoCount;
 }

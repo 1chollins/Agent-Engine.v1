@@ -57,7 +57,11 @@ export async function runGenerationPipeline(listingId: string): Promise<void> {
 
   for (const entry of CONTENT_CALENDAR) {
     if (entry.type === "reel" || entry.type === "story") {
-      const key = selectTemplate({ contentType: entry.type, dayNumber: entry.day });
+      const key = selectTemplate({
+        contentType: entry.type,
+        dayNumber: entry.day,
+        listingId,
+      });
       templateSelections[entry.day] = key;
       photoCounts[entry.day] = getPhotoCountForTemplate(key);
     } else {

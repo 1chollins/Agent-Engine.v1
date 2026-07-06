@@ -8,7 +8,7 @@ import {
   finalizeReelRender,
   finalizeStoryRender,
   pollRenderToCompletion,
-} from "./creatomate-render";
+} from "./remotion-render";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import type { ContentPiece } from "@/types/content";
@@ -131,7 +131,7 @@ async function retryPost(
     .eq("id", piece.id);
 }
 
-// Captions/overlays already populated by text gen step; retry only re-renders the video via Creatomate
+// Captions/overlays already populated by text gen step; retry only re-renders the video on Lambda
 async function retryReel(
   piece: ContentPiece,
   listingId: string
@@ -142,7 +142,10 @@ async function retryReel(
     piece.day_number
   );
 
-  const renderUrl = await pollRenderToCompletion(startResult.renderId);
+  const { url: renderUrl, costUsd } = await pollRenderToCompletion(
+    startResult.renderId,
+    startResult.bucketName
+  );
 
   await finalizeReelRender({
     renderUrl,
@@ -151,6 +154,7 @@ async function retryReel(
     userId: startResult.userId,
     dayNumber: piece.day_number,
     templateKey: startResult.templateKey,
+    costUsd,
   });
 }
 
@@ -196,14 +200,17 @@ async function retryStory(
     }
   }
 
-  // Start Creatomate render, poll to completion, download + upload
+  // Start Lambda render, poll to completion, download + upload
   const startResult = await startStoryRender(
     listingId,
     piece.package_id,
     piece.day_number
   );
 
-  const renderUrl = await pollRenderToCompletion(startResult.renderId);
+  const { url: renderUrl, costUsd } = await pollRenderToCompletion(
+    startResult.renderId,
+    startResult.bucketName
+  );
 
   await finalizeStoryRender({
     renderUrl,
@@ -212,6 +219,7 @@ async function retryStory(
     userId: startResult.userId,
     dayNumber: piece.day_number,
     templateKey: startResult.templateKey,
+    costUsd,
   });
 }
 
