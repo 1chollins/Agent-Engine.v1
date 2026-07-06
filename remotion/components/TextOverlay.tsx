@@ -14,8 +14,9 @@ import {
 type TextOverlayProps = {
   text: string;
   enterFrame: number;
-  position?: "bottom" | "center";
+  position?: "bottom" | "center" | "top";
   fontSize?: number;
+  uppercase?: boolean;
 };
 
 export const TextOverlay: React.FC<TextOverlayProps> = ({
@@ -23,6 +24,7 @@ export const TextOverlay: React.FC<TextOverlayProps> = ({
   enterFrame,
   position = "bottom",
   fontSize = 64,
+  uppercase = false,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -39,9 +41,15 @@ export const TextOverlay: React.FC<TextOverlayProps> = ({
   return (
     <AbsoluteFill
       style={{
-        justifyContent: position === "bottom" ? "flex-end" : "center",
+        justifyContent:
+          position === "bottom"
+            ? "flex-end"
+            : position === "top"
+              ? "flex-start"
+              : "center",
         alignItems: "center",
         paddingBottom: position === "bottom" ? 220 : 0,
+        paddingTop: position === "top" ? 200 : 0,
       }}
     >
       <div
@@ -53,7 +61,8 @@ export const TextOverlay: React.FC<TextOverlayProps> = ({
             '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           fontSize,
           fontWeight: 600,
-          letterSpacing: "0.04em",
+          letterSpacing: uppercase ? "0.25em" : "0.04em",
+          textTransform: uppercase ? "uppercase" : "none",
           textAlign: "center",
           textShadow: "0 2px 24px rgba(0,0,0,0.55)",
           padding: "0 80px",

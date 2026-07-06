@@ -49,6 +49,8 @@ type KenBurnsImageProps = {
   durationInFrames: number;
   seed: number;
   slideIndex: number;
+  /** "in" = 100%→105% (default). "out" = 105%→100% reveal. */
+  mode?: "in" | "out";
 };
 
 export const KenBurnsImage: React.FC<KenBurnsImageProps> = ({
@@ -56,6 +58,7 @@ export const KenBurnsImage: React.FC<KenBurnsImageProps> = ({
   durationInFrames,
   seed,
   slideIndex,
+  mode = "in",
 }) => {
   const frame = useCurrentFrame();
 
@@ -65,11 +68,10 @@ export const KenBurnsImage: React.FC<KenBurnsImageProps> = ({
     easing: Easing.inOut(Easing.ease),
   });
 
-  const scale = interpolate(
-    progress,
-    [0, 1],
-    [KEN_BURNS_SCALE_START, KEN_BURNS_SCALE_END]
-  );
+  const scale =
+    mode === "in"
+      ? interpolate(progress, [0, 1], [KEN_BURNS_SCALE_START, KEN_BURNS_SCALE_END])
+      : interpolate(progress, [0, 1], [KEN_BURNS_SCALE_END, KEN_BURNS_SCALE_START]);
   const direction = panDirectionFor(seed, slideIndex);
   const origin = zoomOriginFor(seed, slideIndex);
   const { x, y } = panOffset(direction, progress);

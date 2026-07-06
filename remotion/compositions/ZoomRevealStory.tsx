@@ -1,42 +1,41 @@
 /**
- * TripleSlideStory — Remotion replacement for the Creatomate
- * "story_triple_slide" template (cb090682).
+ * ZoomRevealStory — variety alternate for story days.
  *
- * Spec parity: 3 photos, city/state text overlay, 13s @ 9:16.
- * Timing: 390 frames @ 30fps. Three 140-frame slides with two 15-frame
- * crossfades (3×140 − 2×15 = 390).
+ * Shares the exact props schema as TripleSlideStory, so the template
+ * selector can swap between them with zero data-plumbing changes.
+ * Distinct look: zoom-OUT reveals (105%→100%) instead of zoom-in,
+ * uppercase letter-spaced text pinned top, slower fade-only cuts.
+ * 13s / 390 frames @ 30fps (3×140 − 2×15), matching TripleSlideStory.
  */
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
-import { z } from "zod";
 import { KenBurnsImage } from "../components/KenBurnsImage";
 import { TextOverlay } from "../components/TextOverlay";
 import { BackgroundMusic } from "../components/BackgroundMusic";
 import { textEnterFrameFor } from "../lib/seeded";
+import {
+  tripleSlideStorySchema,
+  TRIPLE_SLIDE_DURATION_FRAMES,
+  TRIPLE_SLIDE_FPS,
+} from "./TripleSlideStory";
+import type { TripleSlideStoryProps } from "./TripleSlideStory";
 
-export const TRIPLE_SLIDE_FPS = 30;
-export const TRIPLE_SLIDE_DURATION_FRAMES = 390; // 13s
+export const ZOOM_REVEAL_FPS = TRIPLE_SLIDE_FPS;
+export const ZOOM_REVEAL_DURATION_FRAMES = TRIPLE_SLIDE_DURATION_FRAMES;
 const SLIDE_FRAMES = 140;
 const TRANSITION_FRAMES = 15;
 
-export const tripleSlideStorySchema = z.object({
-  photoUrls: z.array(z.string()).length(3),
-  city: z.string(),
-  state: z.string(),
-  seed: z.number(),
-});
+export const zoomRevealStorySchema = tripleSlideStorySchema;
 
-export type TripleSlideStoryProps = z.infer<typeof tripleSlideStorySchema>;
-
-export const TripleSlideStory: React.FC<TripleSlideStoryProps> = ({
+export const ZoomRevealStory: React.FC<TripleSlideStoryProps> = ({
   photoUrls,
   city,
   state,
   seed,
 }) => {
-  const textEnterFrame = textEnterFrameFor(seed, "city-state", 12, 45);
+  const textEnterFrame = textEnterFrameFor(seed, "reveal-city", 15, 40);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
@@ -50,6 +49,7 @@ export const TripleSlideStory: React.FC<TripleSlideStoryProps> = ({
                 durationInFrames={SLIDE_FRAMES}
                 seed={seed}
                 slideIndex={i}
+                mode="out"
               />
             </TransitionSeries.Sequence>
             {i < photoUrls.length - 1 ? (
@@ -62,10 +62,13 @@ export const TripleSlideStory: React.FC<TripleSlideStoryProps> = ({
         ))}
       </TransitionSeries>
 
+      {/* Top-pinned, uppercase, letter-spaced treatment */}
       <TextOverlay
-        text={`${city}, ${state}`}
+        text={`${city} · ${state}`}
         enterFrame={textEnterFrame}
-        position="bottom"
+        position="top"
+        fontSize={52}
+        uppercase
       />
     </AbsoluteFill>
   );
