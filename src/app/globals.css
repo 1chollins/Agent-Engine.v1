@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Frame & Form Studio brand (matches ff-hub) */
+h1,
+h2,
+h3,
+h4 {
+    font-family: var(--font-cormorant), Georgia, serif;
+}
