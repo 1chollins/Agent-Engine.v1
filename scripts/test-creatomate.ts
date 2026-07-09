@@ -105,7 +105,7 @@ async function main() {
   const photoCounts: Record<number, number> = {};
   for (const entry of CONTENT_CALENDAR) {
     if (entry.type === "reel" || entry.type === "story") {
-      const key = selectTemplate({ contentType: entry.type, dayNumber: entry.day });
+      const key = selectTemplate({ contentType: entry.type, dayNumber: entry.day, listingId });
       photoCounts[entry.day] = getPhotoCountForTemplate(key);
     } else {
       photoCounts[entry.day] = 1;

@@ -28,7 +28,7 @@ for (const entry of CONTENT_SCHEDULE) {
     console.log(`  Day ${entry.day.toString().padStart(2)}: post (no Creatomate template)`);
     continue;
   }
-  const key = selectTemplate({ contentType: entry.type, dayNumber: entry.day });
+  const key = selectTemplate({ contentType: entry.type, dayNumber: entry.day, listingId: "test-listing" });
   const photoCount = getPhotoCountForTemplate(key);
   console.log(`  Day ${entry.day.toString().padStart(2)}: ${entry.type.padEnd(5)} → ${key} (${photoCount} photos)`);
 }
@@ -40,7 +40,7 @@ const counts: Record<string, number> = {};
 for (let run = 0; run < RUNS; run++) {
   for (const entry of CONTENT_SCHEDULE) {
     if (entry.type !== "story") continue;
-    const key = selectTemplate({ contentType: "story", dayNumber: entry.day });
+    const key = selectTemplate({ contentType: "story", dayNumber: entry.day, listingId: `test-listing-${run}` });
     counts[key] = (counts[key] ?? 0) + 1;
   }
 }
@@ -63,7 +63,7 @@ const invalidCombos: { type: "reel" | "story"; day: number }[] = [
 let allThrew = true;
 for (const combo of invalidCombos) {
   try {
-    selectTemplate({ contentType: combo.type, dayNumber: combo.day });
+    selectTemplate({ contentType: combo.type, dayNumber: combo.day, listingId: "test-listing" });
     console.log(`  FAIL: ${combo.type} day ${combo.day} did not throw`);
     allThrew = false;
   } catch (err) {
