@@ -69,13 +69,18 @@ export function ContentCalendar({ pieces, listingAddress }: ContentCalendarProps
                 {piece.asset_url && isComplete ? (
                   piece.asset_type === "video" ? (
                     <>
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-100 to-purple-50">
-                        <span className="text-3xl">🎬</span>
-                      </div>
+                      {/* First frame of the rendered video as thumbnail */}
+                      <video
+                        src={`${piece.asset_url}#t=0.1`}
+                        preload="metadata"
+                        muted
+                        playsInline
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      />
                       {/* Play icon overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity group-hover:opacity-100">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg">
-                          <svg className="ml-0.5 h-5 w-5 text-black" fill="currentColor" viewBox="0 0 24 24">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-lg transition-transform group-hover:scale-110">
+                          <svg className="ml-0.5 h-5 w-5 text-ink" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z" />
                           </svg>
                         </div>

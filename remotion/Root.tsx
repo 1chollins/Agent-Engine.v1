@@ -37,6 +37,30 @@ import {
   SPLIT_SHOWCASE_DURATION_FRAMES,
   SPLIT_SHOWCASE_FPS,
 } from "./compositions/SplitScreenShowcaseReel";
+import {
+  GridCollageReel,
+  gridCollageReelSchema,
+  GRID_COLLAGE_DURATION_FRAMES,
+  GRID_COLLAGE_FPS,
+} from "./compositions/GridCollageReel";
+import {
+  CinematicPanReel,
+  cinematicPanReelSchema,
+  CINEMATIC_PAN_DURATION_FRAMES,
+  CINEMATIC_PAN_FPS,
+} from "./compositions/CinematicPanReel";
+import {
+  PolaroidStackStory,
+  polaroidStackStorySchema,
+  POLAROID_STACK_DURATION_FRAMES,
+  POLAROID_STACK_FPS,
+} from "./compositions/PolaroidStackStory";
+import {
+  SplitRevealStory,
+  splitRevealStorySchema,
+  SPLIT_REVEAL_DURATION_FRAMES,
+  SPLIT_REVEAL_FPS,
+} from "./compositions/SplitRevealStory";
 
 /**
  * Composition registry. IDs here become the render targets in Phase 3
@@ -113,6 +137,37 @@ export const RemotionRoot: React.FC = () => {
         }}
       />
 
+      <Composition
+        id="PolaroidStackStory"
+        component={PolaroidStackStory}
+        schema={polaroidStackStorySchema}
+        width={W}
+        height={H}
+        fps={POLAROID_STACK_FPS}
+        durationInFrames={POLAROID_STACK_DURATION_FRAMES}
+        defaultProps={{
+          photoUrls: PLACEHOLDER_PHOTOS.slice(0, 3),
+          city: "Fort Myers",
+          state: "FL",
+          seed: 42,
+        }}
+      />
+      <Composition
+        id="SplitRevealStory"
+        component={SplitRevealStory}
+        schema={splitRevealStorySchema}
+        width={W}
+        height={H}
+        fps={SPLIT_REVEAL_FPS}
+        durationInFrames={SPLIT_REVEAL_DURATION_FRAMES}
+        defaultProps={{
+          photoUrls: PLACEHOLDER_PHOTOS.slice(0, 3),
+          city: "Fort Myers",
+          state: "FL",
+          seed: 42,
+        }}
+      />
+
       {/* ---- Reels ---- */}
       <Composition
         id="SimpleShowcaseReel"
@@ -138,6 +193,38 @@ export const RemotionRoot: React.FC = () => {
         height={H}
         fps={SPLIT_SHOWCASE_FPS}
         durationInFrames={SPLIT_SHOWCASE_DURATION_FRAMES}
+        defaultProps={{
+          photoUrls: PLACEHOLDER_PHOTOS.slice(0, 4),
+          brandName: "Frame & Form Realty",
+          brandLogoUrl: "",
+          website: "frameandformstudio.com",
+          seed: 42,
+        }}
+      />
+      <Composition
+        id="GridCollageReel"
+        component={GridCollageReel}
+        schema={gridCollageReelSchema}
+        width={W}
+        height={H}
+        fps={GRID_COLLAGE_FPS}
+        durationInFrames={GRID_COLLAGE_DURATION_FRAMES}
+        defaultProps={{
+          photoUrls: PLACEHOLDER_PHOTOS.slice(0, 4),
+          brandName: "Frame & Form Realty",
+          brandLogoUrl: "",
+          website: "frameandformstudio.com",
+          seed: 42,
+        }}
+      />
+      <Composition
+        id="CinematicPanReel"
+        component={CinematicPanReel}
+        schema={cinematicPanReelSchema}
+        width={W}
+        height={H}
+        fps={CINEMATIC_PAN_FPS}
+        durationInFrames={CINEMATIC_PAN_DURATION_FRAMES}
         defaultProps={{
           photoUrls: PLACEHOLDER_PHOTOS.slice(0, 4),
           brandName: "Frame & Form Realty",
