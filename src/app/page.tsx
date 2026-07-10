@@ -5,21 +5,26 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-cream">
       {/* Nav */}
-      <nav className="border-b border-sage/20 bg-cream">
+      <nav className="bg-forest">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="text-xl font-bold tracking-tight text-black">
-            Agent Engine
+          <span className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-tan font-heading text-base font-semibold text-cream">
+              F&amp;F
+            </span>
+            <span className="font-heading text-xl font-semibold tracking-tight text-cream">
+              Agent Engine
+            </span>
           </span>
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="rounded-lg px-4 py-2 text-sm font-medium text-black/70 transition-colors hover:text-black"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-cream/70 transition-colors hover:text-cream"
             >
               Sign In
             </Link>
             <Link
               href="/register"
-              className="rounded-lg bg-sage px-5 py-2 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-sage-dark"
+              className="rounded-lg bg-cream px-5 py-2 text-sm font-semibold text-forest shadow-sm transition-colors hover:bg-cream/90"
             >
               Get Started
             </Link>
@@ -45,13 +50,13 @@ export default function LandingPage() {
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
               href="/register"
-              className="w-full rounded-xl bg-sage px-8 py-3.5 text-base font-semibold text-black shadow-md transition-all hover:bg-sage-dark hover:shadow-lg sm:w-auto"
+              className="w-full rounded-xl bg-forest px-8 py-3.5 text-base font-semibold text-cream shadow-md transition-all hover:bg-forest/90 hover:shadow-lg sm:w-auto"
             >
               Start Your First Package
             </Link>
             <Link
               href="#how-it-works"
-              className="w-full rounded-xl border border-sage/40 px-8 py-3.5 text-base font-semibold text-black transition-colors hover:bg-sage/10 sm:w-auto"
+              className="w-full rounded-xl border border-forest/25 px-8 py-3.5 text-base font-semibold text-forest transition-colors hover:bg-forest/5 sm:w-auto"
             >
               See How It Works
             </Link>
