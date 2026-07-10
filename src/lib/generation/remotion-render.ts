@@ -300,11 +300,16 @@ export async function finalizeStoryRender(
 /**
  * Polls render status with regular sleep() for use outside Inngest
  * (retry-piece.ts). Returns { url, costUsd } on success.
+ *
+ * Budget: 48 polls x 5s = 240s. Must be long enough to outlast slow
+ * renders on the 300s Lambda function, but short enough that the whole
+ * retry invocation (start + poll + finalize) stays inside the Vercel
+ * route's maxDuration of 300s.
  */
 export async function pollRenderToCompletion(
   renderId: string,
   bucketName: string,
-  maxAttempts: number = 20,
+  maxAttempts: number = 48,
   intervalMs: number = 5000
 ): Promise<{ url: string; costUsd?: number }> {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {

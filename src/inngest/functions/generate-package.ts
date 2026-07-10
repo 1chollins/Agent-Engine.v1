@@ -225,9 +225,11 @@ export const generatePackage = inngest.createFunction(
     // with "Rate Exceeded". Waves keep concurrent renders bounded; tune
     // via REMOTION_MAX_CONCURRENT_RENDERS once the quota is raised.
     // -------------------------------------------------------
-    // 36 polls × 5s = 180s budget per piece — renders inside a wave only
-    // compete with wave siblings, but leave headroom for a low quota.
-    const MAX_POLL_ATTEMPTS = 36;
+    // 64 polls × 5s = 320s budget per piece — always outlasts the Lambda
+    // function's own 300s timeout, so we never abandon a render the
+    // Lambda might still finish. (Each poll is its own Inngest step, so
+    // this does not run up against any serverless invocation limit.)
+    const MAX_POLL_ATTEMPTS = 64;
 
     type StartRenderResult = {
       renderId: string;
@@ -317,7 +319,7 @@ export const generatePackage = inngest.createFunction(
         await step.run(`timeout-reel-${i + 1}`, async () =>
           markPieceFailed(
             pieceId,
-            "Lambda render timed out after 36 polls (180s)"
+            "Lambda render timed out after 64 polls (320s)"
           )
         );
       }
@@ -403,7 +405,7 @@ export const generatePackage = inngest.createFunction(
         await step.run(`timeout-story-${i + 1}`, async () =>
           markPieceFailed(
             pieceId,
-            "Lambda render timed out after 36 polls (180s)"
+            "Lambda render timed out after 64 polls (320s)"
           )
         );
       }
