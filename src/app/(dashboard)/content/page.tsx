@@ -81,13 +81,13 @@ export default async function ContentPage() {
       const byPath = new Map<string, string>(
         (signed ?? []).map((s) => [s.path ?? "", s.signedUrl])
       );
-      for (const list of grouped.values()) {
+      grouped.forEach((list) => {
         for (const piece of list) {
           piece.url = piece.asset_path ? (byPath.get(piece.asset_path) ?? null) : null;
         }
-      }
+      });
     }
-    for (const [pkgId, list] of grouped) previews.set(pkgId, list);
+    grouped.forEach((list, pkgId) => previews.set(pkgId, list));
   }
 
   return (

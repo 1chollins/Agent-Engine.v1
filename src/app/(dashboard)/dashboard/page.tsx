@@ -82,10 +82,10 @@ export default async function DashboardPage() {
       const byPath = new Map<string, string>(
         (signed ?? []).map((s) => [s.path ?? "", s.signedUrl])
       );
-      for (const [listingId, path] of firstPerListing) {
+      firstPerListing.forEach((path, listingId) => {
         const url = byPath.get(path);
         if (url) thumbs.set(listingId, url);
-      }
+      });
     }
   }
 
