@@ -508,8 +508,4 @@ export const generatePackage = inngest.createFunction(
     });
   }
 );
-eStatus, completed, failed };
-    });
-  }
-);
 
