@@ -7,9 +7,16 @@
  *
  * Env (local .env.local AND Vercel — regular vars, locally verifiable):
  * - REMOTION_AWS_ACCESS_KEY_ID / REMOTION_AWS_SECRET_ACCESS_KEY
- * - REMOTION_LAMBDA_FUNCTION_NAME  (from `npx remotion lambda functions deploy`)
  * - REMOTION_SERVE_URL             (from `npx remotion lambda sites create`)
  * - REMOTION_AWS_REGION            (optional, default us-east-1)
+ *
+ * The Lambda function name is NOT an env var: it's derived from
+ * LAMBDA_CONFIG via speculateFunctionName(), which reproduces the name
+ * `npx remotion lambda functions deploy` generates for that config.
+ * Keeping it in code means a config change is a reviewed commit, not an
+ * invisible dashboard edit (a stale sensitive env var cost us two rounds
+ * of failed retries on 2026-07-10). If you redeploy the function with
+ * different memory/disk/timeout, update LAMBDA_CONFIG to match.
  *
  * Generative motion (Kling) is intentionally NOT supported here —
  * permanent architectural decision; Ken Burns on real photos only.
@@ -17,6 +24,7 @@
 import {
   renderMediaOnLambda,
   getRenderProgress,
+  speculateFunctionName,
   type AwsRegion,
 } from "@remotion/lambda/client";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -30,6 +38,17 @@ import {
 import type { ContentPiece } from "@/types/content";
 
 const DEFAULT_REGION: AwsRegion = "us-east-1";
+
+/** Must match the flags passed to `npx remotion lambda functions deploy`. */
+const LAMBDA_CONFIG = {
+  memorySizeInMb: 3008,
+  diskSizeInMb: 2048,
+  timeoutInSeconds: 300,
+} as const;
+
+function lambdaFunctionName(): string {
+  return speculateFunctionName(LAMBDA_CONFIG);
+}
 
 function getRegion(): AwsRegion {
   return (process.env.REMOTION_AWS_REGION as AwsRegion) ?? DEFAULT_REGION;
@@ -143,7 +162,7 @@ async function startRender(
 
     const { renderId, bucketName } = await renderMediaOnLambda({
       region: getRegion(),
-      functionName: requireEnv("REMOTION_LAMBDA_FUNCTION_NAME"),
+      functionName: lambdaFunctionName(),
       serveUrl: requireEnv("REMOTION_SERVE_URL"),
       composition: COMPOSITION_DEFS[templateKey].compositionId,
       inputProps,
@@ -201,7 +220,7 @@ export async function checkRenderStatus(
   const progress = await getRenderProgress({
     renderId,
     bucketName,
-    functionName: requireEnv("REMOTION_LAMBDA_FUNCTION_NAME"),
+    functionName: lambdaFunctionName(),
     region: getRegion(),
   });
 
