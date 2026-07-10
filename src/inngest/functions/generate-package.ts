@@ -210,36 +210,24 @@ export const generatePackage = inngest.createFunction(
     }
 
     // -------------------------------------------------------
-    // Step 3: Images + Steps 4a-4i: Start all reel + story renders (PARALLEL)
+    // Step 3: Images (runs alongside the first render wave)
     // -------------------------------------------------------
     const imageStep = step.run("generate-images", async () => {
       const result = await runImageGeneration(listing_id, packageId);
       return { succeeded: result.succeeded, failed: result.failed };
     });
 
-    const reelStartSteps = REEL_DAYS.map((day, i) =>
-      step.run(`start-reel-${i + 1}`, async () => {
-        return await startReelRender(listing_id, packageId, day);
-      })
-    );
-
-    const storyStartSteps = STORY_DAYS.map((day, i) =>
-      step.run(`start-story-${i + 1}`, async () => {
-        return await startStoryRender(listing_id, packageId, day);
-      })
-    );
-
-    const reelStartResults = await Promise.allSettled(reelStartSteps);
-    const storyStartResults = await Promise.allSettled(storyStartSteps);
-    await Promise.allSettled([imageStep]);
-
     // -------------------------------------------------------
-    // Steps 5: Poll + finalize each reel and story (ALL PARALLEL)
-    // Each piece polls independently with step.sleep between attempts.
+    // Steps 4-5: Start + poll renders in limited waves.
+    // Each Remotion Lambda render fans out to multiple concurrent Lambda
+    // invocations (~durationFrames / framesPerLambda), so starting all 9
+    // videos at once can exceed the account concurrency quota and fail
+    // with "Rate Exceeded". Waves keep concurrent renders bounded; tune
+    // via REMOTION_MAX_CONCURRENT_RENDERS once the quota is raised.
     // -------------------------------------------------------
-    // 20 polls × 5s = 100s budget — the 30s hero reel can exceed 50s on
-    // Lambda while the account concurrency quota is still low.
-    const MAX_POLL_ATTEMPTS = 20;
+    // 36 polls × 5s = 180s budget per piece — renders inside a wave only
+    // compete with wave siblings, but leave headroom for a low quota.
+    const MAX_POLL_ATTEMPTS = 36;
 
     type StartRenderResult = {
       renderId: string;
@@ -266,10 +254,26 @@ export const generatePackage = inngest.createFunction(
       for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
         await step.sleep(`wait-reel-${i + 1}-${attempt}`, "5s");
 
-        const pollResult = await step.run(
-          `poll-reel-${i + 1}-${attempt}`,
-          async () => checkRenderStatus(renderId, bucketName)
-        );
+        let pollResult;
+        try {
+          pollResult = await step.run(
+            `poll-reel-${i + 1}-${attempt}`,
+            async () => checkRenderStatus(renderId, bucketName)
+          );
+        } catch (err) {
+          // Never strand a piece in "processing": if status polling itself
+          // fails after step retries (e.g. throttled getRenderProgress),
+          // record the failure so the piece stays retryable.
+          await step.run(`fail-poll-reel-${i + 1}`, async () =>
+            markPieceFailed(
+              pieceId,
+              `Render status polling failed: ${
+                err instanceof Error ? err.message : "unknown error"
+              }`
+            )
+          );
+          return;
+        }
 
         if (pollResult.status === "succeeded") {
           renderUrl = pollResult.url ?? null;
@@ -313,7 +317,7 @@ export const generatePackage = inngest.createFunction(
         await step.run(`timeout-reel-${i + 1}`, async () =>
           markPieceFailed(
             pieceId,
-            "Lambda render timed out after 20 polls (100s)"
+            "Lambda render timed out after 36 polls (180s)"
           )
         );
       }
@@ -336,10 +340,26 @@ export const generatePackage = inngest.createFunction(
       for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
         await step.sleep(`wait-story-${i + 1}-${attempt}`, "5s");
 
-        const pollResult = await step.run(
-          `poll-story-${i + 1}-${attempt}`,
-          async () => checkRenderStatus(renderId, bucketName)
-        );
+        let pollResult;
+        try {
+          pollResult = await step.run(
+            `poll-story-${i + 1}-${attempt}`,
+            async () => checkRenderStatus(renderId, bucketName)
+          );
+        } catch (err) {
+          // Never strand a piece in "processing": if status polling itself
+          // fails after step retries (e.g. throttled getRenderProgress),
+          // record the failure so the piece stays retryable.
+          await step.run(`fail-poll-story-${i + 1}`, async () =>
+            markPieceFailed(
+              pieceId,
+              `Render status polling failed: ${
+                err instanceof Error ? err.message : "unknown error"
+              }`
+            )
+          );
+          return;
+        }
 
         if (pollResult.status === "succeeded") {
           renderUrl = pollResult.url ?? null;
@@ -383,21 +403,57 @@ export const generatePackage = inngest.createFunction(
         await step.run(`timeout-story-${i + 1}`, async () =>
           markPieceFailed(
             pieceId,
-            "Lambda render timed out after 20 polls (100s)"
+            "Lambda render timed out after 36 polls (180s)"
           )
         );
       }
     }
 
-    // Fire all 5 reels + 4 stories poll-and-finalize concurrently
-    await Promise.allSettled([
-      ...REEL_DAYS.map((day, i) =>
-        pollAndFinalizeReel(day, i, reelStartResults[i])
-      ),
-      ...STORY_DAYS.map((day, i) =>
-        pollAndFinalizeStory(day, i, storyStartResults[i])
-      ),
-    ]);
+    // Start + poll renders in waves of REMOTION_MAX_CONCURRENT_RENDERS.
+    // A wave's renders are started together, then polled to completion
+    // before the next wave begins, keeping Lambda concurrency bounded.
+    type RenderJob = { kind: "reel" | "story"; day: number; index: number };
+    const renderJobs: RenderJob[] = [
+      ...REEL_DAYS.map((day, index) => ({
+        kind: "reel" as const,
+        day,
+        index,
+      })),
+      ...STORY_DAYS.map((day, index) => ({
+        kind: "story" as const,
+        day,
+        index,
+      })),
+    ];
+
+    const waveSize = Math.max(
+      1,
+      Number(process.env.REMOTION_MAX_CONCURRENT_RENDERS ?? 2)
+    );
+
+    for (let offset = 0; offset < renderJobs.length; offset += waveSize) {
+      const wave = renderJobs.slice(offset, offset + waveSize);
+
+      const startResults = await Promise.allSettled(
+        wave.map((job) =>
+          step.run(`start-${job.kind}-${job.index + 1}`, async () =>
+            job.kind === "reel"
+              ? startReelRender(listing_id, packageId, job.day)
+              : startStoryRender(listing_id, packageId, job.day)
+          )
+        )
+      );
+
+      await Promise.allSettled(
+        wave.map((job, k) =>
+          job.kind === "reel"
+                        ? pollAndFinalizeReel(job.day, job.index, startResults[k])
+            : pollAndFinalizeStory(job.day, job.index, startResults[k])
+        )
+      );
+    }
+
+    await Promise.allSettled([imageStep]);
 
     // -------------------------------------------------------
     // Step 5: Finalize package status
@@ -449,6 +505,10 @@ export const generatePackage = inngest.createFunction(
         .eq("id", listing_id);
 
       return { packageStatus, completed, failed };
+    });
+  }
+);
+eStatus, completed, failed };
     });
   }
 );
