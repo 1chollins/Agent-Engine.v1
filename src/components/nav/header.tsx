@@ -17,13 +17,15 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="bg-sage">
+    <header className="bg-forest">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link
-          href="/dashboard"
-          className="text-xl font-bold tracking-tight text-black"
-        >
-          Agent Engine
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-tan font-heading text-base font-semibold text-cream">
+            F&amp;F
+          </span>
+          <span className="font-heading text-xl font-semibold tracking-tight text-cream">
+            Agent Engine
+          </span>
         </Link>
 
         {/* Desktop nav */}
@@ -37,15 +39,15 @@ export function Header() {
                 href={link.href}
                 className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-sage-dark text-black"
-                    : "text-black/70 hover:bg-sage-dark hover:text-black"
+                    ? "bg-cream/15 text-cream"
+                    : "text-cream/70 hover:bg-cream/10 hover:text-cream"
                 }`}
               >
                 {link.label}
               </Link>
             );
           })}
-          <div className="ml-2 border-l border-black/10 pl-2">
+          <div className="ml-2 border-l border-cream/20 pl-2">
             <LogoutButton />
           </div>
         </nav>
@@ -53,7 +55,7 @@ export function Header() {
         {/* Mobile hamburger */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="rounded-md p-2 text-black/70 transition-colors hover:bg-sage-dark sm:hidden"
+          className="rounded-md p-2 text-cream/70 transition-colors hover:bg-cream/10 sm:hidden"
           aria-label="Toggle menu"
         >
           {mobileOpen ? (
@@ -70,7 +72,7 @@ export function Header() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="border-t border-black/10 bg-sage px-6 pb-4 sm:hidden">
+        <div className="border-t border-cream/15 bg-forest px-6 pb-4 sm:hidden">
           <nav className="flex flex-col gap-1 pt-2">
             {NAV_LINKS.map((link) => {
               const isActive =
@@ -82,15 +84,15 @@ export function Header() {
                   onClick={() => setMobileOpen(false)}
                   className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-sage-dark text-black"
-                      : "text-black/70 hover:bg-sage-dark hover:text-black"
+                      ? "bg-cream/15 text-cream"
+                      : "text-cream/70 hover:bg-cream/10 hover:text-cream"
                   }`}
                 >
                   {link.label}
                 </Link>
               );
             })}
-            <div className="mt-2 border-t border-black/10 pt-2">
+            <div className="mt-2 border-t border-cream/15 pt-2">
               <LogoutButton />
             </div>
           </nav>

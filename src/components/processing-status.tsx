@@ -140,10 +140,10 @@ export function ProcessingStatus({
     <div className="space-y-6">
       {/* Active working indicator */}
       {!isTerminal && (
-        <div className="flex items-center gap-3 rounded-lg bg-sage/10 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-lg border border-tan/40 bg-tan/10 px-4 py-3">
           <div className="relative flex h-5 w-5 items-center justify-center">
-            <span className="absolute h-5 w-5 animate-ping rounded-full bg-sage/40" />
-            <span className="relative h-3 w-3 rounded-full bg-sage" />
+            <span className="absolute h-5 w-5 animate-ping rounded-full bg-tan/40" />
+            <span className="relative h-3 w-3 rounded-full bg-tan" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-black transition-all duration-500">
@@ -170,13 +170,13 @@ export function ProcessingStatus({
         <div className="relative mt-2 h-4 w-full overflow-hidden rounded-full bg-gray-100">
           {/* Completed portion */}
           <div
-            className="h-full rounded-full bg-sage transition-all duration-700 ease-out"
+            className="h-full rounded-full bg-forest transition-all duration-700 ease-out"
             style={{ width: `${progressPct}%` }}
           />
           {/* Animated shimmer on the progress bar when active */}
           {!isTerminal && progressPct < 100 && (
             <div
-              className="absolute inset-0 h-full animate-pulse rounded-full bg-gradient-to-r from-transparent via-sage/30 to-transparent"
+              className="absolute inset-0 h-full animate-pulse rounded-full bg-gradient-to-r from-transparent via-tan/30 to-transparent"
               style={{ width: `${Math.min(progressPct + 10, 100)}%` }}
             />
           )}

@@ -38,7 +38,7 @@ export function FormField({
         autoComplete={autoComplete}
         defaultValue={defaultValue}
         onChange={onChange}
-        className="block w-full rounded-lg border border-sage bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-gray-400 focus:border-sage-darker focus:outline-none focus:ring-1 focus:ring-sage-darker"
+        className="block w-full rounded-lg border border-forest/20 bg-white/60 px-3 py-2.5 text-sm shadow-sm placeholder:text-gray-400 focus:border-tan focus:outline-none focus:ring-2 focus:ring-tan/30"
       />
     </div>
   );

@@ -45,7 +45,7 @@ export function CheckoutButton({ listingId, disabled }: CheckoutButtonProps) {
         type="button"
         onClick={handleCheckout}
         disabled={disabled || loading}
-        className="rounded-lg bg-sage px-8 py-3 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-sage-dark disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-lg bg-forest px-8 py-3 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {loading ? "Redirecting to payment..." : "Confirm & Pay"}
       </button>

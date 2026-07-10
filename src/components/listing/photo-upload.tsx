@@ -330,15 +330,15 @@ export function PhotoUpload({
               onDragStart={() => handleDragStart(index)}
               onDragOver={(e) => handleDragOverItem(e, index)}
               onDragEnd={handleDragEnd}
-              className={`group relative aspect-square cursor-grab overflow-hidden rounded-lg border-2 ${
-                photo.is_hero ? "border-sage-darker" : "border-transparent"
+              className={`group relative aspect-square cursor-grab overflow-hidden rounded-lg border-2 bg-gray-100 ${
+                photo.is_hero ? "border-forest" : "border-transparent"
               } ${dragIndex === index ? "opacity-50" : ""}`}
             >
               <Image
                 src={getPhotoUrl(photo)}
                 alt={photo.file_name}
                 fill
-                className="object-cover"
+                className="object-contain"
                 unoptimized
               />
               {/* Hero Badge */}

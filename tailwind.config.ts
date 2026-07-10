@@ -14,6 +14,23 @@ const config: Config = {
     theme: {
           extend: {
                   colors: {
+                            // Warm neutrals: remap Tailwind's cold gray ramp and
+                            // pure black onto taupe tints derived from cream/ink,
+                            // so every existing text-gray / text-black usage
+                            // renders on-brand without per-file class changes.
+                            black: "#1a1a1a",
+                            gray: {
+                                        50: "#faf6ec",
+                                        100: "#f0e9d8",
+                                        200: "#e2d8c2",
+                                        300: "#c9bda3",
+                                        400: "#a89d87",
+                                        500: "#847a67",
+                                        600: "#615a4b",
+                                        700: "#494438",
+                                        800: "#312d26",
+                                        900: "#211e19",
+                            },
                             sage: {
                                         DEFAULT: "#c29870",
                                         dark: "#b3855c",

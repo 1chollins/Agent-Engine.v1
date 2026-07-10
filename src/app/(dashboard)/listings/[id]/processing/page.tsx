@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ProcessingStatus } from "@/components/processing-status";
+import { AutoRefresh } from "@/components/ui/auto-refresh";
 import type { ContentPackage, ContentPiece } from "@/types/content";
 
 type ProcessingPageProps = {
@@ -94,10 +95,18 @@ export default async function ProcessingPage({ params }: ProcessingPageProps) {
         </div>
 
         {!typedPkg && (
-          <div className="mb-4 rounded-lg border border-sage/20 bg-cream p-4">
-            <p className="text-sm text-gray-600">
-              Your content package is being prepared. This page will update automatically.
-            </p>
+          <div className="mb-4 rounded-lg border border-tan/40 bg-tan/10 p-4">
+            <AutoRefresh intervalMs={4000} />
+            <div className="flex items-center gap-3">
+              <div className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+                <span className="absolute h-5 w-5 animate-ping rounded-full bg-tan/40" />
+                <span className="relative h-3 w-3 rounded-full bg-tan" />
+              </div>
+              <p className="text-sm text-ink/70">
+                Setting up your content package — this usually takes a few
+                seconds. This page updates automatically.
+              </p>
+            </div>
           </div>
         )}
 
