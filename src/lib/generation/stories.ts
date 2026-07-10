@@ -76,9 +76,9 @@ ${themeList}
 For EACH story, provide:
 1. story_teaser: A punchy 1–2 line teaser for the story image overlay (under 15 words). Eye-catching, property-specific.
 2. story_cta: A short CTA text (e.g., "DM for details", "Link in bio", "Tap to learn more"). Include agent name or handle.
-3. caption_instagram: Brief caption (50–80 words) for the story post.
-4. caption_facebook: Brief caption (50–80 words) for Facebook.
-5. hashtags: 15–20 relevant hashtags as a single space-separated string.
+3. caption_instagram: Brief caption (20–40 words MAX) for the story post. Hook line + one detail + CTA, separated by line breaks. Never a dense paragraph.
+4. caption_facebook: Brief caption (25–50 words MAX) for Facebook. Same structure.
+5. hashtags: 10–15 relevant hashtags as a single space-separated string.
 
 RULES:
 - Each story must be UNIQUE with a different angle

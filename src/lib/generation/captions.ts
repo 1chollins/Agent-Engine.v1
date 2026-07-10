@@ -139,7 +139,8 @@ async function generateCaptionsForType(
   listingId: string,
   supabase: ReturnType<typeof createServiceClient>
 ): Promise<BatchCaptionResult[]> {
-  const wordRange = type === "post" ? "150–250" : "100–150";
+  const igRange = type === "post" ? "40–70" : "15–35";
+  const fbRange = type === "post" ? "60–90" : "30–50";
   const themeList = pieces
     .map((p, i) => `- Day ${p.day_number}: Theme — "${themes[i % themes.length]}"`)
     .join("\n");
@@ -154,12 +155,13 @@ Generate captions for these ${pieces.length} ${type}s:
 ${themeList}
 
 For EACH ${type}, output:
-1. Instagram caption (${wordRange} words). Include emojis sparingly. End with a call-to-action mentioning ${brand.agent_name}.
-2. Facebook caption (${wordRange} words). Slightly longer and more detailed than Instagram. End with a call-to-action.
-3. 20–30 hashtags including: #${listing.city.replace(/\s/g, "")}RealEstate, #${listing.city.replace(/\s/g, "")}Homes, location-specific tags, property feature tags, and general real estate tags.
+1. Instagram caption (${igRange} words MAX — social captions are skimmed, not read). Structure: a scroll-stopping hook line of 8 words or fewer, then 2–3 short punchy lines separated by line breaks, then a one-line call-to-action mentioning ${brand.agent_name}. 1–2 emojis total.
+2. Facebook caption (${fbRange} words MAX). Same structure, slightly more detail allowed. End with a one-line call-to-action.
+3. 12–18 hashtags including: #${listing.city.replace(/\s/g, "")}RealEstate, #${listing.city.replace(/\s/g, "")}Homes, location-specific tags, property feature tags, and general real estate tags.
 
 RULES:
-- Every caption MUST reference specific property details (price, address, features, neighborhood)
+- BREVITY IS THE TOP PRIORITY. Never write a dense paragraph. Short lines, line breaks between thoughts.
+- Pick ONE or TWO specific property details per caption (price, a feature, the neighborhood) — do not list everything
 - Each caption must be UNIQUE — different angle, different opening line, different CTA
 - Never start two captions the same way
 - Include the agent's contact info naturally in the CTA
