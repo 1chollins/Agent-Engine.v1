@@ -42,10 +42,12 @@ export function selectTemplate(params: {
 
   if (contentType === "reel") {
     if (dayNumber === 2) return "day1_just_listed";
+    // Day 5 always gets the beat-synced flagship — every package ships
+    // with the "AutoCut" look; the remaining reel days rotate the rest.
+    if (dayNumber === 5) return "reel_beat_synced";
+    const rotation = REEL_VARIANT_KEYS.filter((k) => k !== "reel_beat_synced");
     const dayIndex = (REEL_DAYS as readonly number[]).indexOf(dayNumber);
-    return REEL_VARIANT_KEYS[
-      (hashString(listingId) + dayIndex) % REEL_VARIANT_KEYS.length
-    ];
+    return rotation[(hashString(listingId) + dayIndex) % rotation.length];
   }
 
   const dayIndex = (STORY_DAYS as readonly number[]).indexOf(dayNumber);

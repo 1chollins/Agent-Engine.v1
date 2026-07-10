@@ -223,6 +223,28 @@ export const RemotionRoot: React.FC = () => {
           seed: 42,
         }}
       />
+      {/* ---- Edit-style previews (Studio only; production derives the
+           style from the seeded track's mood) ---- */}
+      {(["punchy", "whip", "vibe", "luxe", "soft"] as const).map((styleKey, i) => (
+        <Composition
+          key={styleKey}
+          id={`BeatSynced-${styleKey.charAt(0).toUpperCase()}${styleKey.slice(1)}`}
+          component={BeatSyncedShowcaseReel}
+          schema={beatSyncedShowcaseReelSchema}
+          width={W}
+          height={H}
+          fps={BEAT_SYNCED_FPS}
+          durationInFrames={BEAT_SYNCED_DURATION_FRAMES}
+          defaultProps={{
+            photoUrls: PLACEHOLDER_PHOTOS.slice(0, 4),
+            brandName: "Frame & Form Realty",
+            brandLogoUrl: "",
+            website: "frameandformstudio.com",
+            seed: 42 + i * 17,
+            styleOverride: styleKey,
+          }}
+        />
+      ))}
       <Composition
         id="GridCollageReel"
         component={GridCollageReel}
