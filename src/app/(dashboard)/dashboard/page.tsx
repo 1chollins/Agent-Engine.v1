@@ -79,7 +79,9 @@ export default async function DashboardPage() {
       const { data: signed } = await supabase.storage
         .from("listing-photos")
         .createSignedUrls(paths, 3600);
-      const byPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+      const byPath = new Map<string, string>(
+        (signed ?? []).map((s) => [s.path ?? "", s.signedUrl])
+      );
       for (const [listingId, path] of firstPerListing) {
         const url = byPath.get(path);
         if (url) thumbs.set(listingId, url);

@@ -78,7 +78,9 @@ export default async function ContentPage() {
       const { data: signed } = await supabase.storage
         .from("generated-content")
         .createSignedUrls(allPaths, 3600);
-      const byPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+      const byPath = new Map<string, string>(
+        (signed ?? []).map((s) => [s.path ?? "", s.signedUrl])
+      );
       for (const list of grouped.values()) {
         for (const piece of list) {
           piece.url = piece.asset_path ? (byPath.get(piece.asset_path) ?? null) : null;
