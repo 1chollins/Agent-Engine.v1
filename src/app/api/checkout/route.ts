@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { MIN_PHOTOS, MIN_VERTICAL_PHOTOS } from "@/types/listing";
 
@@ -85,14 +85,26 @@ export async function POST(request: NextRequest) {
     cancel_url: `${origin}/listings/${listingId}/review`,
   });
 
-  // Create payment record
-  await supabase.from("payments").insert({
-    user_id: user.id,
-    listing_id: listingId,
-    stripe_checkout_session_id: session.id,
-    amount_cents: PACKAGE_PRICE_CENTS,
-    status: "pending",
-  });
+  // Create payment record. Service client on purpose: payments are
+  // system-managed records — RLS gives users read-only access, so a
+  // user-scoped insert is silently rejected (which hid every payment
+  // record until 2026-07-10). Upsert on listing_id so a re-attempted
+  // checkout refreshes the pending row instead of failing the unique
+  // constraint.
+  const serviceClient = createServiceClient();
+  const { error: paymentError } = await serviceClient.from("payments").upsert(
+    {
+      user_id: user.id,
+      listing_id: listingId,
+      stripe_checkout_session_id: session.id,
+      amount_cents: PACKAGE_PRICE_CENTS,
+      status: "pending",
+    },
+    { onConflict: "listing_id" }
+  );
+  if (paymentError) {
+    console.error("Failed to create payment record:", paymentError.message);
+  }
 
   // Update listing status
   await supabase

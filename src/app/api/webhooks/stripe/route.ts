@@ -53,28 +53,36 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // Idempotency check — skip if payment already processed
+  // Idempotency check — skip if this listing's payment already succeeded
   const { data: existing } = await supabase
     .from("payments")
     .select("status")
-    .eq("stripe_checkout_session_id", session.id)
-    .single();
+    .eq("listing_id", listingId)
+    .maybeSingle();
 
   if (existing?.status === "succeeded") {
-    console.log(`Payment ${session.id} already processed, skipping`);
+    console.log(`Payment for listing ${listingId} already processed, skipping`);
     return;
   }
 
-  // Update payment record
-  await supabase
-    .from("payments")
-    .update({
+  // Upsert (not update): guarantees the revenue record exists even if
+  // the checkout route failed to create the pending row first.
+  const { error: paymentError } = await supabase.from("payments").upsert(
+    {
+      user_id: session.metadata?.user_id ?? null,
+      listing_id: listingId,
+      stripe_checkout_session_id: session.id,
+      amount_cents: session.amount_total ?? 0,
       status: "succeeded",
       stripe_payment_intent_id: session.payment_intent as string,
       receipt_url: null, // Stripe receipt URL populated asynchronously
       paid_at: new Date().toISOString(),
-    })
-    .eq("stripe_checkout_session_id", session.id);
+    },
+    { onConflict: "listing_id" }
+  );
+  if (paymentError) {
+    console.error("Failed to record payment:", paymentError.message);
+  }
 
   // Update listing status to processing
   await supabase
