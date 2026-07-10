@@ -22,6 +22,7 @@ export type CompositionTemplateKey =
   | "reel_split_showcase"
   | "reel_grid_collage"
   | "reel_cinematic_pan"
+  | "reel_beat_synced"
   | "story_triple_slide"
   | "story_zoom_reveal"
   | "story_four_scene"
@@ -33,6 +34,7 @@ export const REEL_VARIANT_KEYS: CompositionTemplateKey[] = [
   "reel_split_showcase",
   "reel_grid_collage",
   "reel_cinematic_pan",
+  "reel_beat_synced",
 ];
 
 export const STORY_VARIANT_KEYS: CompositionTemplateKey[] = [
@@ -55,6 +57,7 @@ export const COMPOSITION_DEFS: Record<CompositionTemplateKey, CompositionDef> = 
   reel_split_showcase: { compositionId: "SplitScreenShowcaseReel", photoCount: 4 },
   reel_grid_collage: { compositionId: "GridCollageReel", photoCount: 4 },
   reel_cinematic_pan: { compositionId: "CinematicPanReel", photoCount: 4 },
+  reel_beat_synced: { compositionId: "BeatSyncedShowcaseReel", photoCount: 4 },
   story_triple_slide: { compositionId: "TripleSlideStory", photoCount: 3 },
   story_zoom_reveal: { compositionId: "ZoomRevealStory", photoCount: 3 },
   story_four_scene: { compositionId: "FourSceneStory", photoCount: 4 },
@@ -152,7 +155,8 @@ export async function buildCompositionInputProps(
     case "reel_simple_showcase":
     case "reel_split_showcase":
     case "reel_grid_collage":
-    case "reel_cinematic_pan": {
+    case "reel_cinematic_pan":
+    case "reel_beat_synced": {
       const props: SimpleShowcaseReelProps = {
         photoUrls,
         brandName: (brand?.brokerage_name as string) ?? "",

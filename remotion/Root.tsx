@@ -50,6 +50,12 @@ import {
   CINEMATIC_PAN_FPS,
 } from "./compositions/CinematicPanReel";
 import {
+  BeatSyncedShowcaseReel,
+  beatSyncedShowcaseReelSchema,
+  BEAT_SYNCED_DURATION_FRAMES,
+  BEAT_SYNCED_FPS,
+} from "./compositions/BeatSyncedShowcaseReel";
+import {
   PolaroidStackStory,
   polaroidStackStorySchema,
   POLAROID_STACK_DURATION_FRAMES,
@@ -193,6 +199,22 @@ export const RemotionRoot: React.FC = () => {
         height={H}
         fps={SPLIT_SHOWCASE_FPS}
         durationInFrames={SPLIT_SHOWCASE_DURATION_FRAMES}
+        defaultProps={{
+          photoUrls: PLACEHOLDER_PHOTOS.slice(0, 4),
+          brandName: "Frame & Form Realty",
+          brandLogoUrl: "",
+          website: "frameandformstudio.com",
+          seed: 42,
+        }}
+      />
+      <Composition
+        id="BeatSyncedShowcaseReel"
+        component={BeatSyncedShowcaseReel}
+        schema={beatSyncedShowcaseReelSchema}
+        width={W}
+        height={H}
+        fps={BEAT_SYNCED_FPS}
+        durationInFrames={BEAT_SYNCED_DURATION_FRAMES}
         defaultProps={{
           photoUrls: PLACEHOLDER_PHOTOS.slice(0, 4),
           brandName: "Frame & Form Realty",
