@@ -48,6 +48,12 @@ export function Header() {
               </Link>
             );
           })}
+          <a
+            href="https://www.frameandformstudio.com"
+            className="rounded-md px-3 py-2 text-sm font-medium text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream"
+          >
+            Frame &amp; Form Studio ↗
+          </a>
           <div className="ml-2 border-l border-cream/20 pl-2">
             <LogoutButton />
           </div>
@@ -93,6 +99,12 @@ export function Header() {
                 </Link>
               );
             })}
+            <a
+              href="https://www.frameandformstudio.com"
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream"
+            >
+              Frame &amp; Form Studio ↗
+            </a>
             <div className="mt-2 border-t border-cream/15 pt-2">
               <LogoutButton />
             </div>
