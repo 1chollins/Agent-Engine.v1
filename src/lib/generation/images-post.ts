@@ -22,6 +22,15 @@ export async function generatePostImages(
   const results: PostImageResult[] = [];
   const errors: string[] = [];
 
+  // Free-tier watermark: clean images only after a successful payment.
+  const { data: paidPayment } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("listing_id", listingId)
+    .eq("status", "succeeded")
+    .maybeSingle();
+  const watermark = !paidPayment;
+
   // Pre-load brand assets once
   const [headshot, logo] = await Promise.all([
     loadBrandAsset(brand.headshot_path),
@@ -52,12 +61,14 @@ export async function generatePostImages(
         renderToImage(
           buildPostTemplate({ ...templateProps, variant: "square" }),
           1080,
-          1080
+          1080,
+          watermark
         ),
         renderToImage(
           buildPostTemplate({ ...templateProps, variant: "landscape" }),
           1200,
-          630
+          630,
+          watermark
         ),
       ]);
 

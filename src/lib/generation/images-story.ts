@@ -21,6 +21,15 @@ export async function generateStoryImages(
   const results: StoryImageResult[] = [];
   const errors: string[] = [];
 
+  // Free-tier watermark: clean images only after a successful payment.
+  const { data: paidPayment } = await supabase
+    .from("payments")
+    .select("id")
+    .eq("listing_id", listingId)
+    .eq("status", "succeeded")
+    .maybeSingle();
+  const watermark = !paidPayment;
+
   // Pre-load brand assets once
   const [headshot, logo] = await Promise.all([
     loadBrandAsset(brand.headshot_path),
@@ -50,7 +59,7 @@ export async function generateStoryImages(
         cta,
       });
 
-      const buffer = await renderToImage(template, 1080, 1920);
+      const buffer = await renderToImage(template, 1080, 1920, watermark);
 
       // Upload to Supabase Storage
       const storagePath = `${listing.user_id}/${listingId}/stories/day-${piece.day_number}.png`;

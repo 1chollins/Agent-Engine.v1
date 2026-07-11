@@ -26,15 +26,57 @@ async function loadFonts(): Promise<{
   return fontDataCache;
 }
 
+/** Free-tier watermark overlay for static images (posts + stories). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function withWatermark(element: any, width: number): any {
+  const scale = width >= 1080 ? 1 : width / 1080;
+  return {
+    type: "div",
+    props: {
+      style: {
+        display: "flex",
+        position: "relative",
+        width: "100%",
+        height: "100%",
+      },
+      children: [
+        element,
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute",
+              top: 24 * scale,
+              right: 24 * scale,
+              display: "flex",
+              padding: `${8 * scale}px ${16 * scale}px`,
+              borderRadius: 999,
+              backgroundColor: "rgba(0,0,0,0.38)",
+              color: "rgba(255,255,255,0.85)",
+              fontSize: 22 * scale,
+              fontFamily: "Inter",
+              fontWeight: 400,
+            },
+            children: "Made with frameandformstudio.com",
+          },
+        },
+      ],
+    },
+  };
+}
+
 export async function renderToImage(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   element: any,
   width: number,
-  height: number
+  height: number,
+  watermark = false
 ): Promise<Buffer> {
   const fonts = await loadFonts();
 
-  const svg = await satori(element, {
+  const finalElement = watermark ? withWatermark(element, width) : element;
+
+  const svg = await satori(finalElement, {
     width,
     height,
     fonts: [

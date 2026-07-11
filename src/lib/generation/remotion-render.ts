@@ -151,7 +151,7 @@ async function startRender(
       throw new Error("Could not get signed URLs for photos");
     }
 
-    const inputProps = await buildCompositionInputProps({
+    const baseInputProps = await buildCompositionInputProps({
       templateKey,
       photoUrls,
       listing: ls,
@@ -159,6 +159,18 @@ async function startRender(
       seed: seedFromPieceId(typedPiece.id),
       supabase,
     });
+
+    // Free-tier watermark: a listing renders clean only once it has a
+    // successful payment. (Paid-first flows are unaffected — payment
+    // always precedes generation there.)
+    const { data: paidPayment } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("listing_id", listingId)
+      .eq("status", "succeeded")
+      .maybeSingle();
+
+    const inputProps = { ...baseInputProps, watermark: !paidPayment };
 
     const { renderId, bucketName } = await renderMediaOnLambda({
       region: getRegion(),
