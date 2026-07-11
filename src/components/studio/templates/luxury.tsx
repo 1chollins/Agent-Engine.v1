@@ -1,6 +1,5 @@
 import {
   C,
-  CtaPill,
   FONT_HEADING,
   Monogram,
   Photo,

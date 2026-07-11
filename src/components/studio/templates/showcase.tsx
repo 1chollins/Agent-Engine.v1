@@ -5,7 +5,6 @@ import {
   Photo,
   priceLine,
   StatRow,
-  Wordmark,
   type TemplateProps,
 } from "./shared";
 
