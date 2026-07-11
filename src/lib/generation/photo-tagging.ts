@@ -32,6 +32,62 @@ function normalizeTag(raw: string): ContentTag {
     : "other";
 }
 
+/**
+ * Tags every untagged photo on a listing (generation-time safety net —
+ * the upload-time fire-and-forget tagging is best-effort only).
+ * Runs downloads+classification in small concurrent batches. Errors on
+ * individual photos are logged and skipped; the picker treats untagged
+ * photos as neutral, so partial tagging degrades gracefully.
+ */
+export async function tagUntaggedListingPhotos(
+  listingId: string,
+  supabase: SupabaseClient
+): Promise<{ tagged: number; failed: number; skipped: number }> {
+  const { data: photos } = await supabase
+    .from("listing_photos")
+    .select("id, file_path, content_tag")
+    .eq("listing_id", listingId);
+
+  const untagged = (photos ?? []).filter((p) => !p.content_tag);
+  const skipped = (photos ?? []).length - untagged.length;
+  let tagged = 0;
+  let failed = 0;
+
+  const BATCH = 6;
+  for (let i = 0; i < untagged.length; i += BATCH) {
+    const batch = untagged.slice(i, i + BATCH);
+    const results = await Promise.allSettled(
+      batch.map(async (photo) => {
+        const { data: fileData, error: downloadErr } = await supabase.storage
+          .from("listing-photos")
+          .download(photo.file_path);
+        if (downloadErr || !fileData) {
+          throw new Error(`download failed: ${downloadErr?.message}`);
+        }
+        const buffer = Buffer.from(await fileData.arrayBuffer());
+        const { tag } = await classifyPhoto({
+          imageBuffer: buffer,
+          supabase,
+          listingId,
+        });
+        await supabase
+          .from("listing_photos")
+          .update({ content_tag: tag })
+          .eq("id", photo.id);
+      })
+    );
+    for (const r of results) {
+      if (r.status === "fulfilled") tagged++;
+      else {
+        failed++;
+        console.error("[photo-tagging] batch item failed:", r.reason);
+      }
+    }
+  }
+
+  return { tagged, failed, skipped };
+}
+
 export async function classifyPhoto(params: {
   imageBuffer: Buffer;
   supabase: SupabaseClient;

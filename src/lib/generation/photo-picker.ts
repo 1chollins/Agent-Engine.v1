@@ -1,10 +1,44 @@
 import { CONTENT_CALENDAR } from "@/types/content";
-import type { ListingPhoto } from "@/types/listing";
+import type { ListingPhoto, ContentTag } from "@/types/listing";
 
 type PhotoPickerOptions = {
   photoCounts: Record<number, number>;
   verticalHeroId: string | null;
 };
+
+/**
+ * Smart casting: preferred content tags per slot, in priority order.
+ * The picker satisfies these WITHIN the existing orientation and reuse
+ * rules — a preference never overrides a hard constraint, and untagged
+ * photos behave exactly as before (fallback scan in sort order).
+ */
+
+// Post themes by day (mirrors POST_THEMES order in captions.ts):
+// day 4 Lifestyle, day 7 Feature Spotlight, day 10 Neighborhood, day 13 CTA.
+const POST_TAG_PREFS: Record<number, readonly ContentTag[]> = {
+  4: ["pool", "exterior_back", "living_room", "view"],
+  7: ["kitchen", "bathroom", "detail_shot"],
+  10: ["exterior_aerial", "view", "exterior_front"],
+  13: ["exterior_front", "exterior_back", "living_room"],
+};
+
+// Reels play like a tour: arrive outside, kitchen, living space,
+// amenity, closing beauty shot.
+const REEL_SLOT_PREFS: readonly (readonly ContentTag[])[] = [
+  ["exterior_front", "exterior_aerial", "exterior_back"],
+  ["kitchen", "dining_room"],
+  ["living_room", "dining_room", "office"],
+  ["pool", "exterior_back", "bathroom"],
+  ["bedroom", "view", "detail_shot"],
+];
+
+// Stories: strong opener, heart of the home, personal spaces.
+const STORY_SLOT_PREFS: readonly (readonly ContentTag[])[] = [
+  ["exterior_front", "pool", "exterior_aerial"],
+  ["kitchen", "living_room"],
+  ["bedroom", "bathroom", "view"],
+  ["dining_room", "exterior_back", "detail_shot"],
+];
 
 /**
  * Picks photos for each of the 14 content pieces, orientation-homogeneous.
@@ -65,13 +99,31 @@ export function pickPhotosForPackage(
     usageCount.set(id, getUsage(id) + 1);
   }
 
-  // Pick the first available photo from a pool (usage < 2, not in current piece)
+  // Pick from a pool (usage < 2, not in current piece). When preferred
+  // tags are given, photos matching them (in priority order) win;
+  // otherwise — and as fallback — first available in sort order.
   function pickAvailable(
     pool: ListingPhoto[],
-    usedInPiece: Set<string>
+    usedInPiece: Set<string>,
+    preferredTags?: readonly ContentTag[]
   ): string | null {
+    const available = (photo: ListingPhoto) =>
+      getUsage(photo.id) < 2 && !usedInPiece.has(photo.id);
+
+    if (preferredTags && preferredTags.length > 0) {
+      for (const tag of preferredTags) {
+        for (const photo of pool) {
+          if (photo.content_tag === tag && available(photo)) {
+            incrementUsage(photo.id);
+            usedInPiece.add(photo.id);
+            return photo.id;
+          }
+        }
+      }
+    }
+
     for (const photo of pool) {
-      if (getUsage(photo.id) < 2 && !usedInPiece.has(photo.id)) {
+      if (available(photo)) {
         incrementUsage(photo.id);
         usedInPiece.add(photo.id);
         return photo.id;
@@ -81,16 +133,22 @@ export function pickPhotosForPackage(
   }
 
   // Pick horizontal, fall through to square
-  function pickHorizontalForPiece(usedInPiece: Set<string>): string | null {
+  function pickHorizontalForPiece(
+    usedInPiece: Set<string>,
+    preferredTags?: readonly ContentTag[]
+  ): string | null {
     return (
-      pickAvailable(horizontalPool, usedInPiece) ??
-      pickAvailable(squarePool, usedInPiece)
+      pickAvailable(horizontalPool, usedInPiece, preferredTags) ??
+      pickAvailable(squarePool, usedInPiece, preferredTags)
     );
   }
 
   // Pick vertical only
-  function pickVerticalForPiece(usedInPiece: Set<string>): string | null {
-    return pickAvailable(verticalPool, usedInPiece);
+  function pickVerticalForPiece(
+    usedInPiece: Set<string>,
+    preferredTags?: readonly ContentTag[]
+  ): string | null {
+    return pickAvailable(verticalPool, usedInPiece, preferredTags);
   }
 
   // Count verticals still available (usage < 2)
@@ -128,8 +186,9 @@ export function pickPhotosForPackage(
       }
       const slotsRemaining = count - reelPhotos.length;
       for (let j = 0; j < slotsRemaining; j++) {
+        const prefs = REEL_SLOT_PREFS[reelPhotos.length % REEL_SLOT_PREFS.length];
         reelPhotos.push(
-          pickVerticalForPiece(usedInPiece) ?? horizontalHero.id
+          pickVerticalForPiece(usedInPiece, prefs) ?? horizontalHero.id
         );
       }
     } else {
@@ -140,8 +199,9 @@ export function pickPhotosForPackage(
       }
       const slotsRemaining = count - reelPhotos.length;
       for (let j = 0; j < slotsRemaining; j++) {
+        const prefs = REEL_SLOT_PREFS[reelPhotos.length % REEL_SLOT_PREFS.length];
         reelPhotos.push(
-          pickHorizontalForPiece(usedInPiece) ?? horizontalHero.id
+          pickHorizontalForPiece(usedInPiece, prefs) ?? horizontalHero.id
         );
       }
     }
@@ -163,15 +223,17 @@ export function pickPhotosForPackage(
     if (unusedVerticalsCount() >= count) {
       // All-vertical story
       for (let j = 0; j < count; j++) {
+        const prefs = STORY_SLOT_PREFS[j % STORY_SLOT_PREFS.length];
         storyPhotos.push(
-          pickVerticalForPiece(usedInPiece) ?? horizontalHero.id
+          pickVerticalForPiece(usedInPiece, prefs) ?? horizontalHero.id
         );
       }
     } else {
       // All-horizontal story
       for (let j = 0; j < count; j++) {
+        const prefs = STORY_SLOT_PREFS[j % STORY_SLOT_PREFS.length];
         storyPhotos.push(
-          pickHorizontalForPiece(usedInPiece) ?? horizontalHero.id
+          pickHorizontalForPiece(usedInPiece, prefs) ?? horizontalHero.id
         );
       }
     }
@@ -189,9 +251,11 @@ export function pickPhotosForPackage(
       // Day 1 post always uses horizontal hero
       assignments[idx] = [horizontalHero.id];
     } else {
+      const dayNumber = CONTENT_CALENDAR[idx].day;
       const usedInPiece = new Set<string>();
       assignments[idx] = [
-        pickHorizontalForPiece(usedInPiece) ?? horizontalHero.id,
+        pickHorizontalForPiece(usedInPiece, POST_TAG_PREFS[dayNumber]) ??
+          horizontalHero.id,
       ];
     }
   }

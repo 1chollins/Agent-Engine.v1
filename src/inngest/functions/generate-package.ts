@@ -13,6 +13,7 @@ import {
   markPieceFailed,
 } from "@/lib/generation/remotion-render";
 import { pickPhotosForPackage } from "@/lib/generation/photo-picker";
+import { tagUntaggedListingPhotos } from "@/lib/generation/photo-tagging";
 import { selectTemplate, getPhotoCountForTemplate } from "@/lib/generation/template-selector";
 import {
   submitAllClips,
@@ -34,6 +35,17 @@ export const generatePackage = inngest.createFunction(
   },
   async ({ event, step }) => {
     const { listing_id } = event.data as { listing_id: string };
+
+    // -------------------------------------------------------
+    // Step 0: Ensure photo content tags exist (smart casting).
+    // Upload-time tagging is fire-and-forget from the browser and can
+    // silently fail; this step guarantees tags before photo assignment.
+    // No-op when everything is already tagged.
+    // -------------------------------------------------------
+    await step.run("tag-photos", async () => {
+      const supabase = createServiceClient();
+      return await tagUntaggedListingPhotos(listing_id, supabase);
+    });
 
     // -------------------------------------------------------
     // Step 1: Create package + 14 pieces (idempotent)
