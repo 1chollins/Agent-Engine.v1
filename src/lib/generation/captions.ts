@@ -78,6 +78,98 @@ function buildListingContext(listing: Listing, brand: BrandProfile): string {
   return `PROPERTY DETAILS:\n${details}\n\nAGENT INFO:\nName: ${brand.agent_name}\nTitle: ${brand.agent_title}\nBrokerage: ${brand.brokerage_name}\nPhone: ${brand.phone}\nEmail: ${brand.email}${brand.instagram_handle ? `\nInstagram: ${brand.instagram_handle}` : ""}`;
 }
 
+export type RedoCaptionResult = CaptionResult & {
+  story_teaser?: string;
+  story_cta?: string;
+};
+
+/**
+ * Regenerate-with-direction: rewrites ONE piece's captions, steering with
+ * the user's instruction ("shorter", "highlight the lanai", "more luxury").
+ * The previous captions are included so the rewrite is actually different.
+ * Text-only — cheap enough to allow unlimited redos.
+ */
+export async function regeneratePieceCaptions(
+  listing: Listing,
+  brand: BrandProfile,
+  piece: {
+    day_number: number;
+    content_type: ContentType;
+    caption_instagram: string | null;
+    caption_facebook: string | null;
+    hashtags: string | null;
+    story_teaser?: string | null;
+    story_cta?: string | null;
+  },
+  direction: string,
+  listingId: string
+): Promise<RedoCaptionResult> {
+  const supabase = createServiceClient();
+  const context = buildListingContext(listing, brand);
+  const toneGuide = TONE_INSTRUCTIONS[brand.tone] ?? TONE_INSTRUCTIONS.professional;
+  const isStory = piece.content_type === "story";
+  const igRange = piece.content_type === "post" ? "40–70" : "15–35";
+  const fbRange = piece.content_type === "post" ? "60–90" : "30–50";
+
+  const storyFields = isStory
+    ? `,\n  "story_teaser": "<a punchy 4–8 word teaser overlay>",\n  "story_cta": "<a short call-to-action line>"`
+    : "";
+
+  const prompt = `You are a real estate social media copywriter. REWRITE the captions for one ${piece.content_type} in a 14-day campaign.
+
+${context}
+
+TONE: ${toneGuide}
+
+THE AGENT'S DIRECTION FOR THIS REWRITE (top priority — follow it exactly):
+"${direction}"
+
+PREVIOUS VERSION (write something clearly different):
+Instagram: ${piece.caption_instagram ?? "(none)"}
+Facebook: ${piece.caption_facebook ?? "(none)"}
+${isStory ? `Story teaser: ${piece.story_teaser ?? "(none)"}\nStory CTA: ${piece.story_cta ?? "(none)"}\n` : ""}
+RULES:
+- BREVITY IS THE TOP PRIORITY. Instagram ${igRange} words MAX, Facebook ${fbRange} words MAX.
+- Structure: hook line of 8 words or fewer, then 2–3 short punchy lines with line breaks, then a one-line CTA mentioning ${brand.agent_name}. 1–2 emojis total.
+- 12–18 hashtags as a single space-separated string.
+- Apply the agent's direction above everything else.
+
+Respond in this exact JSON format (ONLY the JSON, no other text):
+{
+  "caption_instagram": "<caption>",
+  "caption_facebook": "<caption>",
+  "hashtags": "<space-separated hashtags>"${storyFields}
+}`;
+
+  const startTime = Date.now();
+  const response = await getAnthropicClient().messages.create({
+    model: MODEL,
+    max_tokens: 1024,
+    messages: [{ role: "user", content: prompt }],
+  });
+  const elapsed = Date.now() - startTime;
+
+  const text = response.content[0].type === "text" ? response.content[0].text : "";
+  const cost =
+    (response.usage.input_tokens / 1_000_000) * INPUT_COST_PER_MILLION +
+    (response.usage.output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION;
+
+  await supabase.from("cost_logs").insert({
+    listing_id: listingId,
+    service: "claude",
+    endpoint: "messages.create:redo-caption",
+    cost_usd: cost,
+    response_time_ms: elapsed,
+    success: true,
+  });
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error("Failed to parse caption rewrite response");
+  }
+  return JSON.parse(jsonMatch[0]) as RedoCaptionResult;
+}
+
 export async function generateCaptionsBatch(
   listing: Listing,
   brand: BrandProfile,

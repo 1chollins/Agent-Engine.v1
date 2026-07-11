@@ -32,6 +32,7 @@ export type ContentPiece = {
   platform: Platform;
   status: ContentPieceStatus;
   retry_count: number;
+  regen_count: number;
   asset_path: string | null;
   asset_path_alt: string | null;
   asset_type: string | null;

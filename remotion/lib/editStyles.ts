@@ -16,7 +16,7 @@ import type { MusicTrack } from "./music";
 export type EntranceKind = "punch" | "whip" | "zoomthrough" | "drift";
 
 export type EditStyle = {
-  key: "punchy" | "whip" | "vibe" | "luxe" | "soft";
+  key: "punchy" | "whip" | "vibe" | "luxe" | "soft" | "hyper" | "retro" | "bounce";
   label: string;
   /** Minimum frames per segment (cut cadence). */
   minSegmentFrames: number;
@@ -96,26 +96,74 @@ export const EDIT_STYLES: Record<EditStyle["key"], EditStyle> = {
     grade: "saturate(1.05) brightness(1.05) contrast(0.98)",
     pulseAmp: 0.015,
   },
+  // The maximal AutoCut: fastest cuts, zoom-throughs, flash on every other
+  // beat, camera shake, heavy grade. TikTok-speed energy.
+  hyper: {
+    key: "hyper",
+    label: "Hyper",
+    minSegmentFrames: 18,
+    firstSegmentMultiplier: 1.8,
+    entrance: "zoomthrough",
+    flashEvery: 2,
+    shake: true,
+    grain: false,
+    grade: "saturate(1.3) contrast(1.18) brightness(1.02)",
+    pulseAmp: 0.045,
+  },
+  // Faded film look: whip cuts, grain, warm washed-out grade — the
+  // nostalgic "shot on film" edit that's everywhere on IG.
+  retro: {
+    key: "retro",
+    label: "Retro",
+    minSegmentFrames: 32,
+    firstSegmentMultiplier: 2,
+    entrance: "whip",
+    flashEvery: 0,
+    shake: false,
+    grain: true,
+    grade: "saturate(0.85) contrast(0.96) sepia(0.22) brightness(1.06) hue-rotate(-8deg)",
+    pulseAmp: 0.02,
+  },
+  // Playful pop: punch entrances with a big beat pulse and bright grade —
+  // the whole frame bounces with the music.
+  bounce: {
+    key: "bounce",
+    label: "Bounce",
+    minSegmentFrames: 22,
+    firstSegmentMultiplier: 2,
+    entrance: "punch",
+    flashEvery: 3,
+    shake: false,
+    grain: false,
+    grade: "saturate(1.18) contrast(1.06) brightness(1.04)",
+    pulseAmp: 0.06,
+  },
 };
 
-/** Music mood → edit style. Upbeat tracks split punchy/whip by seed. */
+/**
+ * Music mood → edit style. Every mood now has 2–4 candidate styles and the
+ * seed picks one, so two reels on the same kind of track still cut
+ * differently. Deterministic: same seed → same pick.
+ */
 export function pickEditStyleFor(
   track: MusicTrack | null,
   seed: number
 ): EditStyle {
   if (!track) return EDIT_STYLES.punchy;
+  const pick = (candidates: EditStyle["key"][]): EditStyle => {
+    const i = Math.floor(random(`style-${seed}`) * candidates.length);
+    return EDIT_STYLES[candidates[Math.min(i, candidates.length - 1)]];
+  };
   switch (track.mood) {
     case "modern":
-      return EDIT_STYLES.vibe;
+      return pick(["vibe", "hyper", "bounce"]);
     case "elegant":
     case "acoustic":
-      return EDIT_STYLES.luxe;
+      return pick(["luxe", "retro"]);
     case "chill":
-      return EDIT_STYLES.soft;
+      return pick(["soft", "retro"]);
     case "upbeat":
     default:
-      return random(`style-${seed}`) < 0.5
-        ? EDIT_STYLES.punchy
-        : EDIT_STYLES.whip;
+      return pick(["punchy", "whip", "bounce", "hyper"]);
   }
 }

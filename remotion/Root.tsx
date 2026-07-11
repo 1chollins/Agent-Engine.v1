@@ -225,7 +225,7 @@ export const RemotionRoot: React.FC = () => {
       />
       {/* ---- Edit-style previews (Studio only; production derives the
            style from the seeded track's mood) ---- */}
-      {(["punchy", "whip", "vibe", "luxe", "soft"] as const).map((styleKey, i) => (
+      {(["punchy", "whip", "vibe", "luxe", "soft", "hyper", "retro", "bounce"] as const).map((styleKey, i) => (
         <Composition
           key={styleKey}
           id={`BeatSynced-${styleKey.charAt(0).toUpperCase()}${styleKey.slice(1)}`}

@@ -9,6 +9,7 @@ type CalendarPiece = {
   content_type: string;
   platform: string;
   status: string;
+  regen_count: number;
   asset_type: string | null;
   asset_url: string | null;
   asset_alt_url: string | null;

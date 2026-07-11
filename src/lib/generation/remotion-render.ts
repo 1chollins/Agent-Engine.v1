@@ -156,7 +156,11 @@ async function startRender(
       photoUrls,
       listing: ls,
       brand: brand as Record<string, unknown> | null,
-      seed: seedFromPieceId(typedPiece.id),
+      // regen_count shifts the seed so each user remix gets different
+      // music, edit style, and pacing (7919 = prime, keeps seeds spread).
+      seed:
+        seedFromPieceId(typedPiece.id) +
+        ((typedPiece as { regen_count?: number }).regen_count ?? 0) * 7919,
       supabase,
     });
 

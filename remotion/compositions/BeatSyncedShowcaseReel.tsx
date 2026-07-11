@@ -51,7 +51,7 @@ export const beatSyncedShowcaseReelSchema = z.object({
   seed: z.number(),
   /** Studio preview only — production derives the style from the track. */
   styleOverride: z
-    .enum(["punchy", "whip", "vibe", "luxe", "soft"])
+    .enum(["punchy", "whip", "vibe", "luxe", "soft", "hyper", "retro", "bounce"])
     .optional(),
 });
 
