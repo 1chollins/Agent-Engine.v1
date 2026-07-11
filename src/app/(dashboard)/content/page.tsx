@@ -5,6 +5,7 @@ import type { Listing } from "@/types/listing";
 import type { ContentPackage } from "@/types/content";
 
 const PREVIEW_COUNT = 7;
+const QUICK_POST_PREVIEW_COUNT = 12;
 
 type PiecePreview = {
   package_id: string;
@@ -12,6 +13,17 @@ type PiecePreview = {
   content_type: string;
   asset_type: string | null;
   asset_path: string | null;
+  url: string | null;
+};
+
+type QuickPostPreview = {
+  id: string;
+  post_type: string;
+  headline: string | null;
+  area: string | null;
+  format: string;
+  asset_path: string;
+  created_at: string;
   url: string | null;
 };
 
@@ -90,6 +102,30 @@ export default async function ContentPage() {
     grouped.forEach((list, pkgId) => previews.set(pkgId, list));
   }
 
+  // Quick Posts — one-click graphics saved from the Quick Post tab
+  const { data: quickPostRows } = await supabase
+    .from("quick_posts")
+    .select("id, post_type, headline, area, format, asset_path, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(QUICK_POST_PREVIEW_COUNT);
+
+  const quickPosts: QuickPostPreview[] = (quickPostRows ?? []).map((q) => ({
+    ...q,
+    url: null,
+  }));
+  if (quickPosts.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from("generated-content")
+      .createSignedUrls(quickPosts.map((q) => q.asset_path), 3600);
+    const byPath = new Map<string, string>(
+      (signed ?? []).map((s) => [s.path ?? "", s.signedUrl])
+    );
+    for (const q of quickPosts) {
+      q.url = byPath.get(q.asset_path) ?? null;
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -98,6 +134,48 @@ export default async function ContentPage() {
           <p className="mt-1 text-gray-600">Your generated content packages.</p>
         </div>
       </div>
+
+      {/* Quick Posts — saved automatically from the Quick Post tab */}
+      {quickPosts.length > 0 && (
+        <section className="mt-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-lg font-semibold text-ink">Quick Posts</h2>
+            <Link href="/quick-post" className="text-sm text-forest hover:text-black">
+              Make another →
+            </Link>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+            {quickPosts.map((q) => (
+              <a
+                key={q.id}
+                href={q.url ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group overflow-hidden rounded-xl border border-forest/15 bg-white/60 transition-all hover:border-forest/40 hover:shadow-sm"
+              >
+                <div className="aspect-square w-full overflow-hidden bg-gray-100">
+                  {q.url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={q.url}
+                      alt={q.headline ?? "Quick post"}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  )}
+                </div>
+                <div className="p-2">
+                  <p className="truncate text-xs font-medium text-ink">
+                    {q.headline || q.post_type.replace(/_/g, " ")}
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    {new Date(q.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {listingsWithStats.length === 0 ? (
         <div className="mt-16 text-center">

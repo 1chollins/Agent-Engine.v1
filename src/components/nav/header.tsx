@@ -7,6 +7,7 @@ import { LogoutButton } from "@/components/auth/logout-button";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/quick-post", label: "Quick Post" },
   { href: "/listings", label: "Listings" },
   { href: "/content", label: "Content" },
   { href: "/settings/brand", label: "Settings" },

@@ -33,6 +33,7 @@ export default async function DashboardPage() {
     { count: packageCount },
     { count: pieceCount },
     { count: videoCount },
+    { count: quickPostCount },
     { data: listings },
     { data: brand },
   ] = await Promise.all([
@@ -44,6 +45,7 @@ export default async function DashboardPage() {
       .select("*", { count: "exact", head: true })
       .eq("status", "complete")
       .eq("asset_type", "video"),
+    supabase.from("quick_posts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
     supabase
       .from("listings")
       .select("*")
@@ -94,6 +96,7 @@ export default async function DashboardPage() {
     { label: "Packages Delivered", value: packageCount ?? 0, sub: "14 pieces each" },
     { label: "Content Pieces", value: pieceCount ?? 0, sub: "posts, reels & stories" },
     { label: "Videos Rendered", value: videoCount ?? 0, sub: "reels & stories" },
+    { label: "Quick Posts", value: quickPostCount ?? 0, sub: "one-click graphics" },
   ];
 
   return (
@@ -117,7 +120,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <section className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
         {stats.map((s) => (
           <div
             key={s.label}
