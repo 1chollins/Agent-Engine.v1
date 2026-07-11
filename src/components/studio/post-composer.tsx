@@ -123,6 +123,8 @@ export function PostComposer() {
   const [copied, setCopied] = useState<"caption" | "tags" | null>(null);
   const [batchPhotos, setBatchPhotos] = useState<string[]>([]);
   const [batchProgress, setBatchProgress] = useState<string | null>(null);
+  // "single" = one graphic from one photo; "week" = batch 7 photos → 7 posts
+  const [mode, setMode] = useState<"single" | "week">("single");
   const [autofilling, setAutofilling] = useState(false);
   const [advanced, setAdvanced] = useState(false);
 
@@ -753,7 +755,43 @@ export function PostComposer() {
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_460px]">
       {/* ---- Form ---- */}
       <div className="flex flex-col gap-6">
-        <Field label="Post type">
+        {/* Mode switcher — single graphic vs the whole week */}
+        <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-forest/15 bg-white/50 p-1.5">
+          <button
+            type="button"
+            onClick={() => setMode("single")}
+            aria-pressed={mode === "single"}
+            className={`flex flex-col items-start gap-0.5 rounded-xl px-4 py-3 text-left transition-colors ${
+              mode === "single" ? "bg-forest text-cream" : "text-ink/70 hover:bg-forest/5"
+            }`}
+          >
+            <span className="text-sm font-semibold">Single post</span>
+            <span className={`text-xs ${mode === "single" ? "text-cream/75" : "text-ink/50"}`}>
+              One graphic from one photo
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("week")}
+            aria-pressed={mode === "week"}
+            className={`flex flex-col items-start gap-0.5 rounded-xl px-4 py-3 text-left transition-colors ${
+              mode === "week" ? "bg-forest text-cream" : "text-ink/70 hover:bg-forest/5"
+            }`}
+          >
+            <span className="text-sm font-semibold">📅 Make my week</span>
+            <span className={`text-xs ${mode === "week" ? "text-cream/75" : "text-ink/50"}`}>
+              7 photos → 7 finished posts + captions
+            </span>
+          </button>
+        </div>
+
+        <Field
+          label={
+            mode === "week"
+              ? "Anchor post type — your week rotates around this"
+              : "Post type"
+          }
+        >
           <PillGroup>
             {POST_TYPE_ORDER.map((key) => (
               <Pill key={key} active={postType === key} onClick={() => handlePostTypeChange(key)}>
@@ -763,6 +801,57 @@ export function PostComposer() {
           </PillGroup>
         </Field>
 
+        {mode === "week" && (
+          <div className="rounded-2xl border border-tan/40 bg-tan/10 p-5">
+            <p className="text-sm leading-relaxed text-ink/70">
+              Drop up to 7 photos and click once: every photo becomes its own
+              post — AI-written copy, a rotating mix of post types and looks —
+              downloaded as one ZIP with a ready-to-paste captions file.
+            </p>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleBatchPhotos}
+              className="mt-4 w-full rounded-lg border border-forest/20 bg-white/60 px-3 py-2 text-sm text-ink/80 file:mr-3 file:rounded file:border-0 file:bg-forest file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-cream"
+            />
+            {batchPhotos.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {batchPhotos.slice(0, 7).map((url, i) => (
+                  <div key={url.slice(-24)} className="relative overflow-hidden rounded-lg">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="h-16 w-16 object-cover" />
+                    <span className="absolute bottom-0 left-0 right-0 bg-forest/85 py-0.5 text-center text-[9px] font-bold uppercase text-cream">
+                      Day {i + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleMakeWeek}
+              disabled={isExporting || batchPhotos.length === 0}
+              className="mt-4 h-12 w-full rounded-xl bg-forest px-4 text-base font-semibold text-cream transition-colors hover:bg-forest/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {batchProgress ??
+                (batchPhotos.length > 0
+                  ? `Make my week — ${Math.min(batchPhotos.length, 7)} posts + captions`
+                  : "Choose photos to enable")}
+            </button>
+            <button
+              type="button"
+              onClick={handleBatchExport}
+              disabled={isExporting || batchPhotos.length === 0}
+              className="mt-2 h-10 w-full rounded-lg border border-forest/25 px-4 text-sm font-medium text-forest transition-colors hover:bg-forest/5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Or: same design for every photo ({batchPhotos.length * FORMAT_ORDER.length || 0} images)
+            </button>
+          </div>
+        )}
+
+        {mode === "single" && (
+        <>
         <Field label="Photos — up to 4 at once">
           <input
             type="file"
@@ -1098,6 +1187,8 @@ export function PostComposer() {
         </div>
         </>
         )}
+        </>
+        )}
       </div>
 
       {/* ---- Pinned preview + download + caption (top on mobile, sticky on desktop) ---- */}
@@ -1116,62 +1207,26 @@ export function PostComposer() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleDownload}
-          disabled={isExporting}
-          className="h-12 w-full rounded-xl bg-forest px-8 text-base font-medium text-cream transition-colors hover:bg-forest/90 disabled:opacity-50"
-        >
-          {isExporting ? "Exporting…" : "Download PNG"}
-        </button>
-        <p className="text-center text-xs text-ink/55">
-          Exports at full {dims.width}×{dims.height}. What you see is what downloads.
-        </p>
-
-        {/* Make my week / batch export */}
-        <div className="w-full rounded-xl border border-tan/40 bg-tan/10 p-4" style={{ maxWidth: dims.width * fitScale }}>
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-ink/60">
-              📅 Make my week
-            </span>
-            {batchPhotos.length > 0 && (
-              <span className="text-xs text-ink/50">
-                {Math.min(batchPhotos.length, 7)} day{batchPhotos.length === 1 ? "" : "s"} ready
-              </span>
-            )}
-          </div>
-          <p className="mb-3 text-xs leading-relaxed text-ink/60">
-            Drop up to 7 photos and click once: every photo becomes its own
-            post — AI-written copy, a rotating mix of post types and looks —
-            downloaded as one ZIP with a ready-to-paste captions file.
-          </p>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleBatchPhotos}
-            className="mb-3 w-full rounded-lg border border-forest/20 bg-white/60 px-2.5 py-1.5 text-xs text-ink/80 file:mr-2 file:rounded file:border-0 file:bg-forest file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-cream"
-          />
-          <button
-            type="button"
-            onClick={handleMakeWeek}
-            disabled={isExporting || batchPhotos.length === 0}
-            className="h-11 w-full rounded-lg bg-forest px-4 text-sm font-semibold text-cream transition-colors hover:bg-forest/90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+        {mode === "single" ? (
+          <>
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isExporting}
+              className="h-12 w-full rounded-xl bg-forest px-8 text-base font-medium text-cream transition-colors hover:bg-forest/90 disabled:opacity-50"
+            >
+              {isExporting ? "Exporting…" : "Download PNG"}
+            </button>
+            <p className="text-center text-xs text-ink/55">
+              Exports at full {dims.width}×{dims.height}. What you see is what downloads.
+            </p>
+          </>
+        ) : (
+          <p className="text-center text-xs text-ink/55" style={{ maxWidth: dims.width * fitScale }}>
             {batchProgress ??
-              (batchPhotos.length > 0
-                ? `Make my week — ${Math.min(batchPhotos.length, 7)} posts + captions`
-                : "Choose photos above to enable")}
-          </button>
-          <button
-            type="button"
-            onClick={handleBatchExport}
-            disabled={isExporting || batchPhotos.length === 0}
-            className="mt-2 h-9 w-full rounded-lg border border-forest/25 px-4 text-xs font-medium text-forest transition-colors hover:bg-forest/5 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Or: same design for every photo ({batchPhotos.length * FORMAT_ORDER.length || 0} images)
-          </button>
-        </div>
+              "This preview renders each day live while your week exports — pick photos on the left and click Make my week."}
+          </p>
+        )}
 
         {/* Caption */}
         <div className="w-full rounded-xl border border-forest/15 bg-white/50 p-4" style={{ maxWidth: dims.width * fitScale }}>
