@@ -19,7 +19,7 @@ export function LoginForm({ message }: LoginFormProps) {
 
   return (
     <AuthCard
-      title="Sign in to Agent Engine"
+      title="Sign in to Listing Studio"
       footer={
         <>
           Don&apos;t have an account?{" "}

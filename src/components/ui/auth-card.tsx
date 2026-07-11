@@ -12,7 +12,7 @@ export function AuthCard({ title, children, footer }: AuthCardProps) {
           F&amp;F
         </span>
         <span className="font-heading text-2xl font-semibold tracking-tight text-ink">
-          Agent Engine
+          Listing Studio
         </span>
       </div>
       <div className="w-full max-w-md rounded-2xl border border-forest/15 bg-white/60 p-10 shadow-sm">

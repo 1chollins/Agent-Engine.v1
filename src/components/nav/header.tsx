@@ -24,7 +24,7 @@ export function Header() {
             F&amp;F
           </span>
           <span className="font-heading text-xl font-semibold tracking-tight text-cream">
-            Agent Engine
+            Listing Studio
           </span>
         </Link>
 

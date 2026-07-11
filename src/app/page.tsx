@@ -12,7 +12,7 @@ export default function LandingPage() {
               F&amp;F
             </span>
             <span className="font-heading text-xl font-semibold tracking-tight text-cream">
-              Agent Engine
+              Listing Studio
             </span>
           </span>
           <div className="flex items-center gap-3">
@@ -198,7 +198,7 @@ export default function LandingPage() {
             Trusted by Growing Agents
           </h2>
           <p className="mt-3 text-gray-500">
-            Realtors using Agent Engine close more deals with consistent social content.
+            Realtors using Listing Studio close more deals with consistent social content.
           </p>
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -244,7 +244,7 @@ export default function LandingPage() {
       <footer className="border-t border-sage/20 bg-cream px-6 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-sm text-gray-400">
-            &copy; {new Date().getFullYear()} Agent Engine. All rights reserved.
+            &copy; {new Date().getFullYear()} Listing Studio. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-gray-400">
             <Link href="/login" className="hover:text-black">
