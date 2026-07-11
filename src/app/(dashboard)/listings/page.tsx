@@ -59,32 +59,32 @@ export default async function ListingsPage() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-black">Listings</h1>
+          <h1 className="text-3xl font-bold text-black">Campaigns</h1>
           <p className="mt-1 text-gray-600">
-            {typedListings.length > 0
-              ? `${typedListings.length} propert${typedListings.length === 1 ? "y" : "ies"}`
-              : "Your property submissions."}
+            One listing in — 14 days of posts, reels &amp; stories out.
+            {typedListings.length > 0 &&
+              ` ${typedListings.length} propert${typedListings.length === 1 ? "y" : "ies"} so far.`}
           </p>
         </div>
         <Link
           href="/listings/new"
           className="rounded-lg bg-forest px-5 py-2.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90"
         >
-          New Listing
+          New Campaign
         </Link>
       </div>
 
       {typedListings.length === 0 ? (
         <div className="mt-16 text-center">
-          <p className="text-lg font-medium text-gray-400">No listings yet</p>
+          <p className="text-lg font-medium text-gray-400">No campaigns yet</p>
           <p className="mt-2 text-sm text-gray-400">
-            Create your first listing to generate a content package.
+            Upload a listing and we generate the full 14-day content package.
           </p>
           <Link
             href="/listings/new"
             className="mt-6 inline-block rounded-lg bg-forest px-6 py-2.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90"
           >
-            New Listing
+            New Campaign
           </Link>
         </div>
       ) : (

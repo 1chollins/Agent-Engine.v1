@@ -92,7 +92,7 @@ export default async function DashboardPage() {
   }
 
   const stats = [
-    { label: "Listings", value: listingCount ?? 0, sub: inFlight > 0 ? `${inFlight} generating now` : "all time" },
+    { label: "Campaigns", value: listingCount ?? 0, sub: inFlight > 0 ? `${inFlight} generating now` : "all time" },
     { label: "Packages Delivered", value: packageCount ?? 0, sub: "14 pieces each" },
     { label: "Content Pieces", value: pieceCount ?? 0, sub: "posts, reels & stories" },
     { label: "Videos Rendered", value: videoCount ?? 0, sub: "reels & stories" },
@@ -115,7 +115,7 @@ export default async function DashboardPage() {
           href="/listings/new"
           className="rounded-lg bg-forest px-5 py-2.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90"
         >
-          New Listing
+          New Campaign
         </Link>
       </div>
 
@@ -141,7 +141,7 @@ export default async function DashboardPage() {
         {/* Recent activity */}
         <section className="lg:col-span-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-black">Recent Listings</h2>
+            <h2 className="text-lg font-semibold text-black">Recent Campaigns</h2>
             {typedListings.length > 0 && (
               <Link href="/listings" className="text-sm text-forest hover:text-black">
                 View all
@@ -208,8 +208,15 @@ export default async function DashboardPage() {
               href="/listings/new"
               className="flex items-center justify-between rounded-xl bg-forest px-5 py-4 text-sm font-semibold text-cream transition-colors hover:bg-forest/90"
             >
-              Start a new listing
+              Start a 14-day campaign
               <span aria-hidden>→</span>
+            </Link>
+            <Link
+              href="/quick-post"
+              className="flex items-center justify-between rounded-xl border border-forest/15 bg-white/60 px-5 py-4 text-sm font-medium text-ink transition-colors hover:border-forest/40"
+            >
+              Make a quick post
+              <span aria-hidden className="text-ink/40">→</span>
             </Link>
             <Link
               href="/content"

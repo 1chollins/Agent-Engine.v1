@@ -131,7 +131,9 @@ export default async function ContentPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-black sm:text-3xl">Content</h1>
-          <p className="mt-1 text-gray-600">Your generated content packages.</p>
+          <p className="mt-1 text-gray-600">
+            Everything you&apos;ve made — quick posts and full campaigns.
+          </p>
         </div>
       </div>
 
@@ -191,7 +193,9 @@ export default async function ContentPage() {
           </Link>
         </div>
       ) : (
-        <div className="mt-6 space-y-5">
+        <div className="mt-8">
+          <h2 className="font-heading text-lg font-semibold text-ink">Campaigns</h2>
+          <div className="mt-3 space-y-5">
           {listingsWithStats.map(({ listing, pkg }) => {
             const isComplete =
               listing.status === "complete" || listing.status === "partial_failure";
@@ -290,6 +294,7 @@ export default async function ContentPage() {
               </Link>
             );
           })}
+          </div>
         </div>
       )}
     </div>
