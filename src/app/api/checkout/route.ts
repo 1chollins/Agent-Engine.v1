@@ -3,7 +3,8 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { MIN_PHOTOS, MIN_VERTICAL_PHOTOS } from "@/types/listing";
 
-const PACKAGE_PRICE_CENTS = Number(process.env.PACKAGE_PRICE_CENTS || "9900");
+// Beta pricing: $20 removes the watermark from a full 14-piece campaign.
+const PACKAGE_PRICE_CENTS = Number(process.env.PACKAGE_PRICE_CENTS || "2000");
 
 export async function POST(request: NextRequest) {
   const supabase = createClient();
@@ -64,13 +65,16 @@ export async function POST(request: NextRequest) {
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
+    // Booking clients enter their Frame & Form promo code (100% off) here —
+    // the session completes at $0 and the webhook unlocks the same way.
+    allow_promotion_codes: true,
     line_items: [
       {
         price_data: {
           currency: "usd",
           unit_amount: PACKAGE_PRICE_CENTS,
           product_data: {
-            name: "14-Day Content Package",
+            name: "14-Day Listing Campaign — Watermark-Free",
             description: `${listing.address}, ${listing.city}, ${listing.state}`,
           },
         },
@@ -106,11 +110,15 @@ export async function POST(request: NextRequest) {
     console.error("Failed to create payment record:", paymentError.message);
   }
 
-  // Update listing status
-  await supabase
-    .from("listings")
-    .update({ status: "pending_payment", updated_at: new Date().toISOString() })
-    .eq("id", listingId);
+  // Update listing status — but only for listings that haven't generated
+  // yet. A watermark unlock on a complete listing must keep its status so
+  // the content page stays reachable if checkout is abandoned.
+  if (listing.status === "draft" || listing.status === "pending_payment") {
+    await supabase
+      .from("listings")
+      .update({ status: "pending_payment", updated_at: new Date().toISOString() })
+      .eq("id", listingId);
+  }
 
   return NextResponse.json({ url: session.url });
 }

@@ -74,7 +74,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripe_checkout_session_id: session.id,
       amount_cents: session.amount_total ?? 0,
       status: "succeeded",
-      stripe_payment_intent_id: session.payment_intent as string,
+      // $0 sessions (100%-off booking promo codes) have no payment intent
+      stripe_payment_intent_id: (session.payment_intent as string | null) ?? null,
       receipt_url: null, // Stripe receipt URL populated asynchronously
       paid_at: new Date().toISOString(),
     },
@@ -82,6 +83,41 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   );
   if (paymentError) {
     console.error("Failed to record payment:", paymentError.message);
+  }
+
+  // Watermark unlock: if this listing already has a finished (watermarked)
+  // package, reset it so the pipeline re-renders every piece clean. Without
+  // this reset, generate-package short-circuits on "complete" and the user
+  // would pay $20 for nothing.
+  const { data: pkg } = await supabase
+    .from("content_packages")
+    .select("id, status")
+    .eq("listing_id", listingId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (pkg && (pkg.status === "complete" || pkg.status === "partial_failure")) {
+    await supabase
+      .from("content_packages")
+      .update({
+        status: "processing",
+        completed_pieces: 0,
+        failed_pieces: 0,
+        processing_started_at: new Date().toISOString(),
+        processing_completed_at: null,
+      })
+      .eq("id", pkg.id);
+
+    await supabase
+      .from("content_pieces")
+      .update({
+        status: "pending",
+        error_message: null,
+        generated_at: null,
+        retry_count: 0,
+      })
+      .eq("package_id", pkg.id);
   }
 
   // Update listing status to processing

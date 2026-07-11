@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ContentCalendar } from "@/components/content/content-calendar";
 import { ListingSelector } from "@/components/content/listing-selector";
+import { UnlockButton } from "@/components/listing/unlock-button";
 import type { ContentPackage, ContentPiece } from "@/types/content";
 
 type ContentPageProps = {
@@ -107,6 +108,15 @@ export default async function ListingContentPage({ params }: ContentPageProps) {
     })
   );
 
+  // Watermarked until a succeeded payment exists for this listing
+  const { data: payment } = await supabase
+    .from("payments")
+    .select("status")
+    .eq("listing_id", params.id)
+    .eq("status", "succeeded")
+    .maybeSingle();
+  const isWatermarked = !payment;
+
   const posts = typedPieces.filter((p) => p.content_type === "post");
   const reels = typedPieces.filter((p) => p.content_type === "reel");
   const stories = typedPieces.filter((p) => p.content_type === "story");
@@ -138,6 +148,23 @@ export default async function ListingContentPage({ params }: ContentPageProps) {
           )}
         </div>
       </div>
+
+      {/* Watermark unlock banner */}
+      {isWatermarked && (typedPkg.status as string) !== "processing" && (
+        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-tan/40 bg-tan/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-heading text-base font-semibold text-ink">
+              This campaign carries the Frame &amp; Form watermark
+            </p>
+            <p className="mt-1 text-sm text-ink/65">
+              Remove it from all 14 pieces for $20 — every piece re-renders clean.
+              Booked your shoot with Frame &amp; Form? Enter your promo code at
+              checkout and it&apos;s included free.
+            </p>
+          </div>
+          <UnlockButton listingId={params.id} />
+        </div>
+      )}
 
       {/* Listing selector */}
       {selectorListings.length > 1 && (

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Listing, ListingPhoto } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import { PROPERTY_TYPES, MIN_PHOTOS } from "@/types/listing";
-import { CheckoutButton } from "@/components/listing/checkout-button";
+import { GenerateActions } from "@/components/listing/generate-actions";
 
 type ReviewPageProps = {
   params: { id: string };
@@ -65,7 +65,7 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
     <div className="mx-auto max-w-3xl">
       <h1 className="mb-2 text-2xl font-bold text-black sm:text-3xl">Review Listing</h1>
       <p className="mb-8 text-gray-600">
-        Review your listing details before proceeding to payment.
+        Review your listing details before generating your campaign.
       </p>
 
       {/* Property Details */}
@@ -242,20 +242,22 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
       <section className="mt-6 rounded-2xl border border-sage/20 bg-white p-6 sm:p-8">
         <h2 className="text-lg font-semibold text-black">What Happens Next</h2>
         <p className="mt-2 text-sm text-gray-600">
-          After payment, we generate your 14-piece content package: 5 branded posts,
-          5 video reels, and 4 stories. Estimated processing time: 5–10 minutes.
+          We generate your 14-piece content package: 5 branded posts, 5 video reels,
+          and 4 stories. Estimated processing time: 5–10 minutes. Generate free with
+          our watermark, or pay $20 for a watermark-free campaign — included at no
+          charge when you book your shoot with Frame &amp; Form Studio.
         </p>
       </section>
 
       {/* Actions */}
-      <div className="mt-8 flex items-center justify-between">
+      <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <Link
           href={`/listings/new?draft=${params.id}&step=photos`}
           className="text-sm font-medium text-gray-600 hover:text-black"
         >
           Back to Editing
         </Link>
-        <CheckoutButton listingId={params.id} disabled={!canSubmit} />
+        <GenerateActions listingId={params.id} disabled={!canSubmit} />
       </div>
     </div>
   );
