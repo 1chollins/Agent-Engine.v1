@@ -78,7 +78,19 @@ async function downscaleToDataUrl(file: File, kind: ImgKind): Promise<string> {
   return canvas.toDataURL(type, quality);
 }
 
-export function PostComposer() {
+/** Account brand profile passed from the server — populates identity fields once. */
+export type InitialBrand = {
+  agentName?: string;
+  agentTitle?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  socialHandle?: string;
+  headshotUrl?: string | null;
+  logoUrl?: string | null;
+};
+
+export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) {
   const exportRef = useRef<HTMLDivElement>(null);
   const colRef = useRef<HTMLDivElement>(null);
   const lookScrollRef = useRef<HTMLDivElement>(null);
@@ -621,9 +633,24 @@ export function PostComposer() {
     return () => ro.disconnect();
   }, []);
 
-  // ---- Brand memory: identity fields persist on this device ----------------
-  // Load once on mount; saved values win over the built-in placeholders.
+  // ---- Brand memory ---------------------------------------------------------
+  // Priority: built-in placeholders < account brand profile (Settings) <
+  // this device's saved tweaks. Enter your brand once in Settings and every
+  // tool wears it; local edits made here still win on this device.
   useEffect(() => {
+    if (initialBrand) {
+      const applyBrand = (v: string | undefined, set: (v: string) => void) => {
+        if (typeof v === "string" && v.length > 0) set(v);
+      };
+      applyBrand(initialBrand.agentName, setAgentName);
+      applyBrand(initialBrand.agentTitle, setAgentTitle);
+      applyBrand(initialBrand.phone, setPhone);
+      applyBrand(initialBrand.email, setEmail);
+      applyBrand(initialBrand.website, setWebsite);
+      applyBrand(initialBrand.socialHandle, setSocialHandle);
+      if (initialBrand.headshotUrl) setHeadshotUrl(initialBrand.headshotUrl);
+      if (initialBrand.logoUrl) setLogoUrl(initialBrand.logoUrl);
+    }
     try {
       const raw = window.localStorage.getItem(BRAND_STORAGE_KEY);
       if (!raw) return;
