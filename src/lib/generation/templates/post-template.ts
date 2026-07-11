@@ -128,6 +128,10 @@ export function buildPostTemplate(props: PostTemplateProps) {
                           fontSize: priceSize,
                           fontWeight: 700,
                           color: "white",
+                          // Never let the price wrap or shrink — it anchors the bar.
+                          flexShrink: 0,
+                          whiteSpace: "nowrap",
+                          marginRight: 16,
                         },
                         children: price,
                       },
@@ -139,6 +143,11 @@ export function buildPostTemplate(props: PostTemplateProps) {
                           fontSize: detailSize,
                           color: "rgba(255,255,255,0.9)",
                           fontWeight: 400,
+                          // Single line always — wrapping here pushed the agent
+                          // bar off the short FB canvas and broke the layout.
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
                         },
                         children: details,
                       },
@@ -154,6 +163,12 @@ export function buildPostTemplate(props: PostTemplateProps) {
                     fontSize: addressSize,
                     color: "rgba(255,255,255,0.85)",
                     marginBottom: isSquare ? 16 : 8,
+                    // Long addresses must truncate, never wrap — a second line
+                    // overflows the fixed-height bar (worst on the 630px FB).
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    maxWidth: width - (isSquare ? 60 : 48),
                   },
                   children: `${listing.address}, ${listing.city}, ${listing.state} ${listing.zip_code}`,
                 },
@@ -200,6 +215,10 @@ export function buildPostTemplate(props: PostTemplateProps) {
                                 fontSize: nameSize,
                                 fontWeight: 700,
                                 color: "white",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                maxWidth: width - (isSquare ? 160 : 130),
                               },
                               children: brand.agent_name,
                             },
@@ -210,6 +229,10 @@ export function buildPostTemplate(props: PostTemplateProps) {
                               style: {
                                 fontSize: nameSize - 2,
                                 color: "rgba(255,255,255,0.8)",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                maxWidth: width - (isSquare ? 160 : 130),
                               },
                               children: `${brand.brokerage_name}  •  ${brand.phone}`,
                             },
