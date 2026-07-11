@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { ContentCalendar } from "@/components/content/content-calendar";
 import { ListingSelector } from "@/components/content/listing-selector";
 import { UnlockButton } from "@/components/listing/unlock-button";
+import { ShareLink } from "@/components/property/share-link";
+import { ensurePropertyPage } from "@/lib/property-page";
 import type { ContentPackage, ContentPiece } from "@/types/content";
 
 type ContentPageProps = {
@@ -92,6 +94,7 @@ export default async function ListingContentPage({ params }: ContentPageProps) {
         content_type: piece.content_type,
         platform: piece.platform,
         status: piece.status,
+        regen_count: piece.regen_count ?? 0,
         asset_type: piece.asset_type,
         asset_url: assetUrl,
         asset_alt_url: assetAltUrl,
@@ -107,6 +110,13 @@ export default async function ListingContentPage({ params }: ContentPageProps) {
       };
     })
   );
+
+  // Public property page — self-healing: creates one for campaigns that
+  // predate the feature. Ownership was verified above (listing query).
+  const pageSlug = await ensurePropertyPage(params.id);
+  const propertyPageUrl = pageSlug
+    ? `https://studio.frameandformstudio.com/p/${pageSlug}`
+    : null;
 
   // Watermarked until a succeeded payment exists for this listing
   const { data: payment } = await supabase
@@ -163,6 +173,22 @@ export default async function ListingContentPage({ params }: ContentPageProps) {
             </p>
           </div>
           <UnlockButton listingId={params.id} />
+        </div>
+      )}
+
+      {/* Property page — the destination for every "Link in bio" CTA */}
+      {propertyPageUrl && (
+        <div className="mb-6 rounded-2xl border border-forest/15 bg-white/60 p-5">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="font-heading text-base font-semibold text-ink">
+              🏠 Property page is live
+            </span>
+          </div>
+          <p className="mb-3 text-sm text-ink/65">
+            A public page for this listing — photos, video tour, and a contact
+            form that emails you every lead. Put it in your bio and your captions.
+          </p>
+          <ShareLink url={propertyPageUrl} />
         </div>
       )}
 

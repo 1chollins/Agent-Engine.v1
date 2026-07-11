@@ -520,6 +520,16 @@ export const generatePackage = inngest.createFunction(
 
       return { packageStatus, completed, failed };
     });
+
+    // -------------------------------------------------------
+    // Step 6: Property page — every campaign gets a public,
+    // hosted single-listing page with lead capture (idempotent).
+    // -------------------------------------------------------
+    await step.run("ensure-property-page", async () => {
+      const { ensurePropertyPage } = await import("@/lib/property-page");
+      const slug = await ensurePropertyPage(listing_id);
+      return { slug };
+    });
   }
 );
 

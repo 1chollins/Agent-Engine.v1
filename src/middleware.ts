@@ -8,6 +8,7 @@ const PUBLIC_ROUTES = [
   "/reset-password",
   "/update-password",
   "/auth/confirm",
+  "/p", // public property pages
 ];
 
 function isPublicRoute(pathname: string): boolean {
