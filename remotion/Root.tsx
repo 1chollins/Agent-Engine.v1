@@ -67,6 +67,12 @@ import {
   SPLIT_REVEAL_DURATION_FRAMES,
   SPLIT_REVEAL_FPS,
 } from "./compositions/SplitRevealStory";
+import {
+  AnimatedQuickPost,
+  animatedQuickPostSchema,
+  ANIMATED_QUICK_POST_DURATION_FRAMES,
+  ANIMATED_QUICK_POST_FPS,
+} from "./compositions/AnimatedQuickPost";
 
 /**
  * Composition registry. IDs here become the render targets in Phase 3
@@ -300,6 +306,38 @@ export const RemotionRoot: React.FC = () => {
           seed: 42,
         }}
       />
+      {/* ---- Animated Quick Post (square + story) ---- */}
+      {(
+        [
+          { id: "AnimatedQuickPost", width: 1080, height: 1080 },
+          { id: "AnimatedQuickPost-Story", width: 1080, height: 1920 },
+        ] as const
+      ).map((v) => (
+        <Composition
+          key={v.id}
+          id={v.id}
+          component={AnimatedQuickPost}
+          schema={animatedQuickPostSchema}
+          width={v.width}
+          height={v.height}
+          fps={ANIMATED_QUICK_POST_FPS}
+          durationInFrames={ANIMATED_QUICK_POST_DURATION_FRAMES}
+          defaultProps={{
+            photoUrl: PLACEHOLDER_PHOTOS[0],
+            eyebrow: "Now Leasing",
+            headline: "Brand-new pool homes in Cape Coral",
+            area: "Cape Coral, FL",
+            specsLine: "$525,000 · 2,140 Sqft · Private Pool",
+            featuresLine: "Cathedral ceilings · 42″ cabinets · Screened lanai",
+            cta: "DM to schedule a tour",
+            brandName: "Frame & Form Studio",
+            logoUrl: null,
+            primaryColor: "#3d4a2f",
+            secondaryColor: "#c29870",
+            seed: 42,
+          }}
+        />
+      ))}
     </>
   );
 };

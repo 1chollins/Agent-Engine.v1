@@ -367,6 +367,27 @@ export async function pollRenderToCompletion(
   throw new Error(`Lambda render timed out after ${maxAttempts} polls`);
 }
 
+/**
+ * Generic Lambda render for compositions that aren't campaign pieces
+ * (e.g. AnimatedQuickPost). Caller owns all DB bookkeeping.
+ */
+export async function startGenericRender(
+  compositionId: string,
+  inputProps: Record<string, unknown>
+): Promise<{ renderId: string; bucketName: string }> {
+  const { renderId, bucketName } = await renderMediaOnLambda({
+    region: getRegion(),
+    functionName: lambdaFunctionName(),
+    serveUrl: requireEnv("REMOTION_SERVE_URL"),
+    composition: compositionId,
+    inputProps,
+    codec: "h264",
+    privacy: "public",
+    framesPerLambda: Number(process.env.REMOTION_FRAMES_PER_LAMBDA ?? 100),
+  });
+  return { renderId, bucketName };
+}
+
 export async function markPieceFailed(
   pieceId: string,
   errorMessage: string

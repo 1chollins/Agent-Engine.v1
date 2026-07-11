@@ -137,6 +137,8 @@ export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) 
   const [batchProgress, setBatchProgress] = useState<string | null>(null);
   // "single" = one graphic from one photo; "week" = batch 7 photos → 7 posts
   const [mode, setMode] = useState<"single" | "week">("single");
+  const [animating, setAnimating] = useState(false);
+  const [animateMsg, setAnimateMsg] = useState<string | null>(null);
   const [autofilling, setAutofilling] = useState(false);
   const [advanced, setAdvanced] = useState(false);
 
@@ -265,6 +267,60 @@ export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) 
       window.alert("Export failed — see the browser console for details.");
     } finally {
       setIsExporting(false);
+    }
+  }
+
+  /**
+   * Animated export: queues square + story 6s motion versions of this
+   * post on the render pipeline. Videos land in the Content tab.
+   */
+  async function handleAnimate() {
+    if (!photoUrl) {
+      setAnimateMsg("Upload a photo first — the animation needs one.");
+      return;
+    }
+    if (animating) return;
+    setAnimating(true);
+    setAnimateMsg(null);
+    try {
+      const specsLine = [
+        price ? (price.trim().startsWith("$") ? price.trim() : `$${price.trim()}`) : null,
+        sqft ? `${sqft} Sqft` : null,
+        pool || null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      const featuresLine = [feature1, feature2, feature3].filter(Boolean).join(" · ");
+      const res = await fetch("/api/quick-posts/animate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photo: photoUrl,
+          logo: logoUrl,
+          postType,
+          eyebrow: config.eyebrow,
+          headline,
+          area,
+          specsLine,
+          featuresLine,
+          cta,
+          brandName: agentName || "Frame & Form Studio",
+          caption,
+          hashtags,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAnimateMsg(data.error || "Could not queue the animation");
+        return;
+      }
+      setAnimateMsg(
+        "🎬 Animating! Square + story videos land in your Content tab in ~2 minutes."
+      );
+    } catch {
+      setAnimateMsg("Something went wrong — try again.");
+    } finally {
+      setAnimating(false);
     }
   }
 
@@ -1247,6 +1303,17 @@ export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) 
             <p className="text-center text-xs text-ink/55">
               Exports at full {dims.width}×{dims.height}. What you see is what downloads.
             </p>
+            <button
+              type="button"
+              onClick={handleAnimate}
+              disabled={animating || isExporting || !photoUrl}
+              className="h-11 w-full rounded-xl border border-tan bg-tan/10 px-8 text-sm font-semibold text-ink transition-colors hover:bg-tan/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {animating ? "Queuing…" : "🎬 Animate — 6s video (square + story)"}
+            </button>
+            {animateMsg && (
+              <p className="text-center text-xs text-ink/60">{animateMsg}</p>
+            )}
           </>
         ) : (
           <p className="text-center text-xs text-ink/55" style={{ maxWidth: dims.width * fitScale }}>

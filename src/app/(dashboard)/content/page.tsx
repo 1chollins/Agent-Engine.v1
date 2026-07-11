@@ -23,6 +23,8 @@ type QuickPostPreview = {
   area: string | null;
   format: string;
   asset_path: string;
+  asset_type: string;
+  status: string;
   created_at: string;
   url: string | null;
 };
@@ -105,7 +107,7 @@ export default async function ContentPage() {
   // Quick Posts — one-click graphics saved from the Quick Post tab
   const { data: quickPostRows } = await supabase
     .from("quick_posts")
-    .select("id, post_type, headline, area, format, asset_path, created_at")
+    .select("id, post_type, headline, area, format, asset_path, asset_type, status, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(QUICK_POST_PREVIEW_COUNT);
@@ -155,22 +157,44 @@ export default async function ContentPage() {
                 rel="noopener noreferrer"
                 className="group overflow-hidden rounded-xl border border-forest/15 bg-white/60 transition-all hover:border-forest/40 hover:shadow-sm"
               >
-                <div className="aspect-square w-full overflow-hidden bg-gray-100">
-                  {q.url && (
+                <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
+                  {q.status === "processing" ? (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-2">
+                      <span className="h-3 w-3 animate-pulse rounded-full bg-tan" />
+                      <span className="text-[10px] font-medium text-ink/50">Rendering…</span>
+                    </div>
+                  ) : q.asset_type === "video" && q.url ? (
+                    <>
+                      <video
+                        src={`${q.url}#t=0.5`}
+                        preload="metadata"
+                        muted
+                        playsInline
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      />
+                      <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/85">
+                        <svg className="ml-px h-3 w-3 text-ink" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </span>
+                    </>
+                  ) : q.url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={q.url}
                       alt={q.headline ?? "Quick post"}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
-                  )}
+                  ) : null}
                 </div>
                 <div className="p-2">
                   <p className="truncate text-xs font-medium text-ink">
                     {q.headline || q.post_type.replace(/_/g, " ")}
+                    {q.asset_type === "video" && " · 🎬"}
                   </p>
                   <p className="text-[10px] text-gray-400">
                     {new Date(q.created_at).toLocaleDateString()}
+                    {q.asset_type === "video" && ` · ${q.format}`}
                   </p>
                 </div>
               </a>
