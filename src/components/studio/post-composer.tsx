@@ -875,13 +875,28 @@ export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) 
               : "Post type"
           }
         >
-          <PillGroup>
+          {/* Mobile: compact dropdown — the 12 pills ate half the screen */}
+          <select
+            value={postType}
+            onChange={(e) => handlePostTypeChange(e.target.value as PostTypeKey)}
+            className="w-full rounded-lg border border-forest/25 bg-white/60 px-3 py-2.5 text-sm text-ink sm:hidden"
+          >
             {POST_TYPE_ORDER.map((key) => (
-              <Pill key={key} active={postType === key} onClick={() => handlePostTypeChange(key)}>
+              <option key={key} value={key}>
                 {POST_TYPES[key].name}
-              </Pill>
+              </option>
             ))}
-          </PillGroup>
+          </select>
+          {/* Desktop: full pill row */}
+          <div className="hidden sm:block">
+            <PillGroup>
+              {POST_TYPE_ORDER.map((key) => (
+                <Pill key={key} active={postType === key} onClick={() => handlePostTypeChange(key)}>
+                  {POST_TYPES[key].name}
+                </Pill>
+              ))}
+            </PillGroup>
+          </div>
         </Field>
 
         {mode === "week" && (
