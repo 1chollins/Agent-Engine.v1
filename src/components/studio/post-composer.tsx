@@ -835,9 +835,9 @@ export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) 
   };
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_460px]">
+    <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_460px]">
       {/* ---- Form ---- */}
-      <div className="flex flex-col gap-6">
+      <div className="flex min-w-0 flex-col gap-6">
         {/* Mode switcher — single graphic vs the whole week */}
         <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-forest/15 bg-white/50 p-1.5">
           <button
@@ -1277,13 +1277,13 @@ export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) 
       {/* ---- Pinned preview + download + caption (top on mobile, sticky on desktop) ---- */}
       <div
         ref={colRef}
-        className="order-first flex w-full flex-col items-center gap-4 lg:order-none lg:sticky lg:top-8 lg:self-start"
+        className="order-first flex w-full min-w-0 flex-col items-center gap-4 lg:order-none lg:sticky lg:top-8 lg:self-start"
       >
         {/* Selected template — full-size live preview (the export target) */}
         <div
           data-testid="preview"
           style={{ width: dims.width * fitScale, height: dims.height * fitScale, overflow: "hidden" }}
-          className="rounded-xl border border-forest/15 shadow-sm"
+          className="max-w-full rounded-xl border border-forest/15 shadow-sm"
         >
           <div style={{ transform: `scale(${fitScale})`, transformOrigin: "top left", width: dims.width }}>
             <PostPreview ref={exportRef} template={template} {...basePreview} />
