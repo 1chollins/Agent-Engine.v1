@@ -2,14 +2,32 @@ import ffmpeg from "fluent-ffmpeg";
 import { createServiceClient } from "@/lib/supabase/server";
 import { selectMusicTrack } from "./music";
 import { join } from "path";
-import { mkdirSync, existsSync, writeFileSync, unlinkSync, readFileSync, readdirSync, rmSync } from "fs";
+import { mkdirSync, existsSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { randomUUID } from "crypto";
 
-const CROSSFADE_DURATION = 0.5;
-const MUSIC_VOLUME = 0.3;
 const OUTPUT_WIDTH = 1080;
 const OUTPUT_HEIGHT = 1920;
+const FPS = 30;
+
+// Cuts land on the beat of the selected track. Holds are whole bars (4 beats)
+// so the rhythm sits on the phrasing of the music — an arbitrary 7-beat hold
+// still lands on a beat but reads as a stumble. Largest that fits wins.
+const PREFERRED_BEATS_PER_CUT = [8, 4];
+
+// Hard cuts on the beat are what make a reel read as "edited" rather than as a
+// slideshow. A crossfade smears the cut across the downbeat and kills that.
+// Set > 0 only if you deliberately want the softer look.
+const TRANSITION_DURATION = 0;
+
+const AUDIO_FADE_IN = 0.3;
+const AUDIO_FADE_OUT = 1.5;
+const VIDEO_FADE_OUT = 0.5;
+
+// Instagram/Facebook Reels overlay their own UI across the bottom ~15% of the
+// frame, so captions sit above that line.
+const TEXT_BASELINE = 0.66;
+const TEXT_FADE = 0.25;
 
 type StitchOptions = {
   clipPaths: string[]; // Paths in Supabase storage (generated-content bucket)
@@ -27,13 +45,96 @@ type StitchResult = {
 };
 
 /**
- * Stitches video clips into a single reel with crossfade transitions,
+ * Reads the true duration of a media file. The generator returns clips that are
+ * only approximately the requested length, so every downstream timing decision
+ * has to be based on a measurement rather than an assumption.
+ */
+function probeDuration(path: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(path, (err, data) => {
+      if (err) return reject(err);
+      const d = data?.format?.duration;
+      if (typeof d !== "number" || !isFinite(d) || d <= 0) {
+        return reject(new Error(`Could not read duration for ${path}`));
+      }
+      resolve(d);
+    });
+  });
+}
+
+/**
+ * Chooses a single hold length, in whole beats, that every shot will use.
+ *
+ * A uniform hold gives the reel an even rhythm, and quantising it to the beat
+ * means each cut lands on the music instead of drifting against it. The hold is
+ * additionally snapped to a whole frame, because ffmpeg encodes whole frames
+ * and the leftover fractions would otherwise accumulate across the reel.
+ */
+export function planBeatCuts(
+  clipDurations: number[],
+  bpm: number
+): { segmentDuration: number; totalDuration: number } {
+  const beat = 60 / bpm;
+  const shortest = Math.min(...clipDurations);
+
+  // Never ask for more footage than the shortest clip actually has.
+  let beats = PREFERRED_BEATS_PER_CUT.find((b) => b * beat <= shortest);
+  if (!beats) beats = Math.max(1, Math.floor(shortest / beat));
+
+  let segment = beats * beat;
+
+  // If even a single beat overruns the shortest clip, fall back to the clip
+  // itself rather than trimming past its end.
+  if (segment > shortest) segment = shortest;
+
+  const segmentFrames = Math.max(1, Math.round(segment * FPS));
+  segment = segmentFrames / FPS;
+
+  return {
+    segmentDuration: segment,
+    totalDuration: segment * clipDurations.length,
+  };
+}
+
+/**
+ * Escapes a string for use inside an ffmpeg drawtext filter argument.
+ */
+function escapeDrawtext(text: string): string {
+  return text
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "’") // curly apostrophe dodges quoting entirely
+    .replace(/:/g, "\\:")
+    .replace(/%/g, "\\%");
+}
+
+/**
+ * drawtext has no auto-fit, so size is estimated from glyph count. Without this
+ * a long phrase runs off the side of the frame.
+ */
+function fitFontSize(text: string, base: number, maxWidth: number): number {
+  if (!text) return base;
+  // Slightly pessimistic per-glyph width so long phrases keep a real margin
+  // rather than kissing the frame edge.
+  const estimated = text.length * 0.58;
+  return Math.max(28, Math.round(Math.min(base, maxWidth / estimated)));
+}
+
+/**
+ * Stitches video clips into a single reel with beat-synced hard cuts,
  * text overlays, and background music.
  */
 export async function stitchReelVideo(
   options: StitchOptions
 ): Promise<StitchResult> {
-  const { clipPaths, textOverlays, listingId, pieceId, userId, dayNumber, brandTone } = options;
+  const {
+    clipPaths,
+    textOverlays,
+    listingId,
+    pieceId,
+    userId,
+    dayNumber,
+    brandTone,
+  } = options;
   const supabase = createServiceClient();
   const startTime = Date.now();
   const workDir = join(tmpdir(), `ae-stitch-${randomUUID()}`);
@@ -57,106 +158,157 @@ export async function stitchReelVideo(
       localClips.push(localPath);
     }
 
-    // Select music track
-    const music = selectMusicTrack(brandTone);
+    if (localClips.length === 0) {
+      throw new Error("No clips supplied to stitchReelVideo");
+    }
+
+    // Measure what we actually got back from the generator.
+    const durations = await Promise.all(localClips.map(probeDuration));
+
+    // Seeded so the days of one package get different tracks, and so a
+    // re-render of the same day reproduces the same reel.
+    const music = selectMusicTrack(brandTone, `${listingId}-${dayNumber}`);
     const hasMusicFile = existsSync(music.path);
 
-    // Build FFmpeg filter for crossfade stitching + text overlays
+    const { segmentDuration, totalDuration } = planBeatCuts(
+      durations,
+      music.bpm
+    );
+
     const outputPath = join(workDir, "output.mp4");
 
     await new Promise<void>((resolve, reject) => {
       let command = ffmpeg();
 
-      // Add all clips as inputs
       for (const clip of localClips) {
         command = command.input(clip);
       }
 
-      // Add music if available
+      // The music bed is the reel's only audio. The clips are generated from
+      // stills, so their audio tracks are silent at best and absent at worst —
+      // mixing them in previously made the filter graph fail whenever a clip
+      // came back without an audio stream.
       if (hasMusicFile) {
         command = command.input(music.path);
+      } else {
+        command = command.input("anullsrc=r=44100:cl=stereo").inputFormat("lavfi");
       }
+      const audioIdx = localClips.length;
 
-      // Build complex filter
       const filters: string[] = [];
       const clipCount = localClips.length;
 
-      // Scale and pad each clip to ensure consistent dimensions
+      // Trim each clip to the beat-locked hold, then fill the frame.
+      // `increase` + crop fills 1080x1920; the previous `decrease` + pad
+      // letterboxed every non-vertical clip with black bars.
       for (let i = 0; i < clipCount; i++) {
         filters.push(
-          `[${i}:v]scale=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:force_original_aspect_ratio=decrease,` +
-          `pad=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,` +
-          `setsar=1,fps=30[v${i}]`
+          `[${i}:v]trim=0:${segmentDuration.toFixed(3)},setpts=PTS-STARTPTS,` +
+            `scale=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:force_original_aspect_ratio=increase,` +
+            `crop=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT},` +
+            `setsar=1,fps=${FPS}[v${i}]`
         );
       }
 
-      // Apply crossfade transitions between clips
+      let videoLabel: string;
       if (clipCount === 1) {
-        // Single clip — just use it directly
-        filters.push(`[v0]null[vout]`);
-      } else {
-        // Chain crossfades: v0 xfade v1 -> tmp0, tmp0 xfade v2 -> tmp1, etc.
+        filters.push(`[v0]null[vcat]`);
+        videoLabel = "vcat";
+      } else if (TRANSITION_DURATION > 0) {
         let prevLabel = "v0";
         for (let i = 1; i < clipCount; i++) {
-          const outLabel = i === clipCount - 1 ? "vmerged" : `tmp${i - 1}`;
-          // Calculate offset: each clip is ~5s, crossfade starts 0.5s before end
-          const offset = i * 5 - CROSSFADE_DURATION * i;
+          const outLabel = i === clipCount - 1 ? "vcat" : `tmp${i - 1}`;
+          const offset = i * (segmentDuration - TRANSITION_DURATION);
           filters.push(
-            `[${prevLabel}][v${i}]xfade=transition=fade:duration=${CROSSFADE_DURATION}:offset=${offset}[${outLabel}]`
+            `[${prevLabel}][v${i}]xfade=transition=fade:` +
+              `duration=${TRANSITION_DURATION}:offset=${offset.toFixed(3)}[${outLabel}]`
           );
           prevLabel = outLabel;
         }
-
-        // Add text overlays (one per clip, timed to appear during each segment)
-        let lastLabel = "vmerged";
-        for (let i = 0; i < Math.min(textOverlays.length, clipCount); i++) {
-          const text = textOverlays[i]?.replace(/'/g, "\\'") ?? "";
-          if (!text) continue;
-          const drawStart = i * (5 - CROSSFADE_DURATION) + 0.5;
-          const drawEnd = drawStart + 3.5;
-          const outLabel = i === Math.min(textOverlays.length, clipCount) - 1 ? "vout" : `txt${i}`;
-          filters.push(
-            `[${lastLabel}]drawtext=text='${text}':fontsize=48:fontcolor=white:` +
-            `borderw=3:bordercolor=black:x=(w-tw)/2:y=h-h/4:` +
-            `enable='between(t,${drawStart},${drawEnd})'[${outLabel}]`
-          );
-          lastLabel = outLabel;
-        }
-
-        // If no text overlays were applied, just pass through
-        if (lastLabel === "vmerged") {
-          filters.push(`[vmerged]null[vout]`);
-        }
+        videoLabel = "vcat";
+      } else {
+        const inputs = Array.from({ length: clipCount }, (_, i) => `[v${i}]`).join("");
+        filters.push(`${inputs}concat=n=${clipCount}:v=1:a=0[vcat]`);
+        videoLabel = "vcat";
       }
 
-      // Audio: concatenate clip audio, mix with music
-      const audioInputs = Array.from({ length: clipCount }, (_, i) => `[${i}:a]`).join("");
+      // Text overlays — one phrase per shot, held for that shot.
+      const overlayCount = Math.min(textOverlays.length, clipCount);
+      const baseFont = Math.round(OUTPUT_HEIGHT * 0.046);
+      const marginX = Math.round(OUTPUT_WIDTH * 0.08);
+      const available = OUTPUT_WIDTH - marginX * 2;
+      const baselineY = Math.round(OUTPUT_HEIGHT * TEXT_BASELINE);
+
+      for (let i = 0; i < overlayCount; i++) {
+        const raw = textOverlays[i];
+        if (!raw) continue;
+        const text = escapeDrawtext(raw);
+        const start = i * segmentDuration + 0.2;
+        const end = (i + 1) * segmentDuration - 0.2;
+        if (end <= start) continue;
+
+        const fontSize = fitFontSize(raw, baseFont, available);
+
+        // A soft scrim keeps white type legible over a bright kitchen or a sky.
+        const scrimLabel = `scr${i}`;
+        const scrimHeight = Math.round(OUTPUT_HEIGHT * 0.26);
+        filters.push(
+          `[${videoLabel}]drawbox=x=0:y=${OUTPUT_HEIGHT - scrimHeight}:` +
+            `w=${OUTPUT_WIDTH}:h=${scrimHeight}:color=black@0.30:t=fill:` +
+            `enable='between(t,${start.toFixed(3)},${end.toFixed(3)})'[${scrimLabel}]`
+        );
+        videoLabel = scrimLabel;
+
+        // Fade the type in and out instead of snapping it on.
+        const alpha =
+          `if(lt(t,${start.toFixed(3)}),0,` +
+          `if(lt(t,${(start + TEXT_FADE).toFixed(3)}),(t-${start.toFixed(3)})/${TEXT_FADE},` +
+          `if(lt(t,${(end - TEXT_FADE).toFixed(3)}),1,` +
+          `if(lt(t,${end.toFixed(3)}),(${end.toFixed(3)}-t)/${TEXT_FADE},0))))`;
+
+        const textLabel = `txt${i}`;
+        filters.push(
+          `[${videoLabel}]drawtext=text='${text}':` +
+            `fontsize=${fontSize}:fontcolor=white:` +
+            `shadowcolor=black@0.55:shadowx=0:shadowy=2:` +
+            `x=${marginX}:y=${baselineY}:` +
+            `alpha='${alpha}'[${textLabel}]`
+        );
+        videoLabel = textLabel;
+      }
+
       filters.push(
-        `${audioInputs}concat=n=${clipCount}:v=0:a=1[aclips]`
+        `[${videoLabel}]fade=t=out:` +
+          `st=${Math.max(0, totalDuration - VIDEO_FADE_OUT).toFixed(3)}:` +
+          `d=${VIDEO_FADE_OUT},format=yuv420p[vout]`
       );
 
-      if (hasMusicFile) {
-        const musicIdx = clipCount;
-        filters.push(
-          `[${musicIdx}:a]volume=${MUSIC_VOLUME}[amusic]`,
-          `[aclips][amusic]amix=inputs=2:duration=shortest[aout]`
-        );
-      } else {
-        filters.push(`[aclips]anull[aout]`);
-      }
+      // Music runs at full level and is faded at both ends. Previously it sat
+      // at 30% underneath silent clip audio, which is why reels came out quiet.
+      filters.push(
+        `[${audioIdx}:a]atrim=0:${totalDuration.toFixed(3)},asetpts=N/SR/TB,` +
+          `afade=t=in:st=0:d=${AUDIO_FADE_IN},` +
+          `afade=t=out:st=${Math.max(0, totalDuration - AUDIO_FADE_OUT).toFixed(3)}:` +
+          `d=${AUDIO_FADE_OUT}[aout]`
+      );
 
       command
         .complexFilter(filters, ["vout", "aout"])
         .outputOptions([
           "-map", "[vout]",
           "-map", "[aout]",
+          "-t", totalDuration.toFixed(3),
           "-c:v", "libx264",
-          "-preset", "fast",
-          "-crf", "23",
+          "-preset", "medium",
+          "-crf", "21",
+          "-profile:v", "high",
+          "-pix_fmt", "yuv420p",
+          "-maxrate", "8M",
+          "-bufsize", "12M",
           "-c:a", "aac",
-          "-b:a", "128k",
+          "-b:a", "192k",
+          "-ar", "48000",
           "-movflags", "+faststart",
-          "-fs", "50M", // Max 50MB file size
         ])
         .output(outputPath)
         .on("end", () => resolve())
@@ -164,10 +316,8 @@ export async function stitchReelVideo(
         .run();
     });
 
-    // Read the output file
     const outputBuffer = readFileSync(outputPath);
 
-    // Upload to Supabase
     const storagePath = `${userId}/${listingId}/reels/day-${dayNumber}.mp4`;
     const { error: uploadError } = await supabase.storage
       .from("generated-content")
@@ -180,14 +330,16 @@ export async function stitchReelVideo(
       throw new Error(`Final video upload failed: ${uploadError.message}`);
     }
 
-    // Calculate approximate duration
-    const numClips = localClips.length;
-    const totalDuration =
-      numClips * 5 - (numClips - 1) * CROSSFADE_DURATION;
+    // Report what was actually written, not what was intended.
+    let measuredDuration = totalDuration;
+    try {
+      measuredDuration = await probeDuration(outputPath);
+    } catch {
+      // fall back to the planned duration
+    }
 
     const elapsed = Date.now() - startTime;
 
-    // Log cost ($0 for self-hosted FFmpeg)
     await supabase.from("cost_logs").insert({
       listing_id: listingId,
       content_piece_id: pieceId,
@@ -198,9 +350,8 @@ export async function stitchReelVideo(
       success: true,
     });
 
-    return { outputPath: storagePath, durationSeconds: totalDuration };
+    return { outputPath: storagePath, durationSeconds: measuredDuration };
   } finally {
-    // Clean up temp files
     cleanupDir(workDir);
   }
 }
@@ -208,13 +359,6 @@ export async function stitchReelVideo(
 function cleanupDir(dir: string): void {
   try {
     if (existsSync(dir)) {
-      for (const file of readdirSync(dir)) {
-        try {
-          unlinkSync(join(dir, file));
-        } catch {
-          // ignore cleanup errors
-        }
-      }
       rmSync(dir, { recursive: true, force: true });
     }
   } catch {
