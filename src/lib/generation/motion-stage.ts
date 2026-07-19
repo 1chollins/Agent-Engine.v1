@@ -69,7 +69,9 @@ export async function submitAllClips(params: {
   const work: ClipWorkItem[] = [];
   for (const photoId of uniquePhotoIds) {
     const tag = tagByPhotoId.get(photoId) ?? null;
-    const prompt = getMotionPrompt(tag);
+    // Seeded on the photo so each shot in a reel gets a different camera move,
+    // while staying stable for the (photo_id, prompt_hash) clip cache.
+    const prompt = getMotionPrompt(tag, photoId);
     try {
       const result = await getCachedClipOrSubmit({
         listingId,
