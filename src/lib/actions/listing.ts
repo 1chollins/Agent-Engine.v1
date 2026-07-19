@@ -2,12 +2,25 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { MIN_PHOTOS, MAX_PHOTOS, MIN_VERTICAL_PHOTOS } from "@/types/listing";
-import type { ListingFormState } from "@/types/listing";
+import {
+  MIN_PHOTOS,
+  MAX_PHOTOS,
+  MIN_VERTICAL_PHOTOS,
+  PROPERTY_TYPES,
+  getPropertyClass,
+} from "@/types/listing";
+import type { ListingFormState, PropertyType } from "@/types/listing";
 
-const VALID_PROPERTY_TYPES = [
-  "single_family", "condo", "townhome", "villa", "multi_family", "vacant_land",
-];
+// Derived, not hand-written. This list was previously a copy of the property
+// types and silently went stale when new ones were added — the form offered
+// them and the server then rejected them as invalid.
+const VALID_PROPERTY_TYPES: string[] = PROPERTY_TYPES.map((t) => t.value);
+
+/** Bed and bath counts only describe a home. An office has neither. */
+function hasBedsAndBaths(propertyType: string): boolean {
+  const cls = getPropertyClass(propertyType as PropertyType);
+  return cls === "residential" || cls === "multifamily";
+}
 
 export async function createListing(
   _prevState: ListingFormState,
@@ -191,7 +204,7 @@ export async function setHeroPhoto(
 
 function extractListingFields(formData: FormData) {
   const propertyType = formData.get("property_type") as string;
-  const isVacantLand = propertyType === "vacant_land";
+  const wantsBedsBaths = hasBedsAndBaths(propertyType);
 
   return {
     address: formData.get("address") as string,
@@ -199,8 +212,8 @@ function extractListingFields(formData: FormData) {
     state: formData.get("state") as string,
     zip_code: formData.get("zip_code") as string,
     property_type: propertyType,
-    bedrooms: isVacantLand ? null : Number(formData.get("bedrooms")) || null,
-    bathrooms: isVacantLand ? null : Number(formData.get("bathrooms")) || null,
+    bedrooms: wantsBedsBaths ? Number(formData.get("bedrooms")) || null : null,
+    bathrooms: wantsBedsBaths ? Number(formData.get("bathrooms")) || null : null,
     sqft: Number(formData.get("sqft")) || 0,
     lot_size: (formData.get("lot_size") as string) || null,
     price: Number(formData.get("price")) || 0,

@@ -5,7 +5,8 @@ import { useState } from "react";
 import { createListing, updateListing } from "@/lib/actions/listing";
 import { FormField } from "@/components/ui/form-field";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { PROPERTY_TYPES } from "@/types/listing";
+import { PROPERTY_TYPES, getPropertyClass } from "@/types/listing";
+import type { PropertyType } from "@/types/listing";
 import type { Listing, PropertyType } from "@/types/listing";
 
 type ListingDetailsFormProps = {
@@ -24,7 +25,11 @@ export function ListingDetailsForm({ mode, initialData, onSaved }: ListingDetail
     initialData?.property_type ?? "single_family"
   );
 
-  const isVacantLand = propertyType === "vacant_land";
+  // Bed and bath counts describe a home, not an office or a retail unit, so
+  // the fields are hidden for anything that isn't lived in.
+  const propertyClass = getPropertyClass(propertyType as PropertyType);
+  const showBedsBaths =
+    propertyClass === "residential" || propertyClass === "multifamily";
 
   // Notify parent when saved successfully
   if (state.success && state.listingId && onSaved) {
@@ -107,23 +112,29 @@ export function ListingDetailsForm({ mode, initialData, onSaved }: ListingDetail
           />
         </div>
 
-        {!isVacantLand && (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <FormField
-              label="Bedrooms *"
-              name="bedrooms"
-              type="number"
-              required={!isVacantLand}
-              defaultValue={initialData?.bedrooms?.toString()}
-            />
-            <FormField
-              label="Bathrooms *"
-              name="bathrooms"
-              type="number"
-              required={!isVacantLand}
-              placeholder="2.5"
-              defaultValue={initialData?.bathrooms?.toString()}
-            />
+        {/* Year built applies to any building, so it stays outside the
+            beds/baths group rather than disappearing with it. */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {showBedsBaths && (
+            <>
+              <FormField
+                label="Bedrooms *"
+                name="bedrooms"
+                type="number"
+                required
+                defaultValue={initialData?.bedrooms?.toString()}
+              />
+              <FormField
+                label="Bathrooms *"
+                name="bathrooms"
+                type="number"
+                required
+                placeholder="2.5"
+                defaultValue={initialData?.bathrooms?.toString()}
+              />
+            </>
+          )}
+          {propertyClass !== "land" && (
             <FormField
               label="Year Built"
               name="year_built"
@@ -131,8 +142,8 @@ export function ListingDetailsForm({ mode, initialData, onSaved }: ListingDetail
               placeholder="2020"
               defaultValue={initialData?.year_built?.toString()}
             />
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
