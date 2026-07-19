@@ -92,6 +92,107 @@ const MOTION_PROMPTS: Record<ContentTag, string[]> = {
     "Very subtle slow push-in, holding the subject centered with minimal camera movement.",
     "Very subtle slow pull back, holding the subject centered with minimal camera movement.",
   ],
+
+  // --- commercial ---
+  lobby: [
+    "Slow push-in across the lobby toward the reception desk, revealing ceiling height and finishes.",
+    "Slow pull back from the reception desk, revealing the full lobby volume.",
+    "Slow pan across the lobby seating and finishes, framing held level.",
+  ],
+  reception: [
+    "Slow push-in toward the reception desk, holding signage and finishes centered.",
+    "Slow pan across the reception area, desk passing evenly through frame.",
+  ],
+  office_suite: [
+    "Slow push-in through the open office toward the window line, desks receding evenly.",
+    "Slow pull back from the window line, revealing the full floorplate and natural light.",
+    "Slow pan across the open office, workstations passing evenly through frame.",
+  ],
+  conference_room: [
+    "Slow push-in toward the conference table, holding the table centered as the room reveals.",
+    "Slow pull back from the head of the table, revealing the full room and glazing.",
+  ],
+  break_room: [
+    "Slow push-in toward the break room counter and seating, even interior light.",
+    "Slow pan across the break room, counter and seating passing through frame.",
+  ],
+  retail_floor: [
+    "Slow push-in down the retail floor toward the back wall, fixtures receding evenly.",
+    "Slow pull back from the back wall, revealing the full sales floor and ceiling height.",
+    "Slow pan across the sales floor, fixtures passing evenly through frame.",
+  ],
+  storefront: [
+    "Slow push-in toward the storefront entrance from the sidewalk, glazing and signage centered.",
+    "Slow pan across the storefront glazing, signage held level.",
+    "Slow rise revealing the storefront and its signage from street level.",
+  ],
+  restroom: [
+    "Slow push-in toward the vanity and fixtures, tile held sharp with steady framing.",
+    "Slow pan across the fixtures and tile, framing held level.",
+  ],
+  parking: [
+    "Slow push-in across the parking area toward the building entrance, even daylight.",
+    "Slow pan across the parking field, striping receding evenly through frame.",
+    "Slow rise revealing the parking area and its approach to the building.",
+  ],
+  building_exterior: [
+    "Slow push-in toward the building entrance, facade held centered and level.",
+    "Slow rise revealing the facade from ground level, roofline entering frame.",
+    "Slow pan across the building frontage, facade held level.",
+  ],
+  signage: [
+    "Very slow push-in on the building signage, lettering held centered and sharp.",
+    "Very slow pan across the signage, lettering held level.",
+  ],
+  common_area: [
+    "Slow push-in across the common area toward its focal point, even interior light.",
+    "Slow pull back revealing the full common area and its finishes.",
+    "Slow pan across the common area, seating passing evenly through frame.",
+  ],
+
+  // --- multifamily ---
+  unit_interior: [
+    "Slow push-in through the unit toward the window line, revealing depth and natural light.",
+    "Slow pull back from the window line, revealing the full unit layout.",
+    "Slow pan across the unit interior, framing held level.",
+  ],
+  fitness_center: [
+    "Slow push-in across the fitness floor toward the mirrored wall, equipment receding evenly.",
+    "Slow pan across the fitness equipment, framing held level.",
+  ],
+  clubhouse: [
+    "Slow push-in across the clubhouse toward its focal point, warm interior light.",
+    "Slow pull back revealing the full clubhouse and its seating.",
+  ],
+  laundry: [
+    "Slow push-in down the laundry room, machines receding evenly on either side.",
+    "Slow pan across the laundry machines, framing held level.",
+  ],
+  courtyard: [
+    "Slow push-in across the courtyard toward the far side, landscaping framed evenly.",
+    "Slow rise revealing the courtyard and the building around it.",
+    "Slow pan across the courtyard, planting passing evenly through frame.",
+  ],
+
+  // --- land ---
+  parcel: [
+    "Slow descending push-in over the parcel, land held centered in frame.",
+    "Slow orbit above the parcel, boundaries held in frame.",
+    "Slow rise and pull back revealing the full parcel and its surroundings.",
+  ],
+  frontage: [
+    "Slow pan along the property frontage, boundary line held level.",
+    "Slow push-in toward the frontage from the road, boundary centered.",
+  ],
+  road_access: [
+    "Slow push-in along the access road toward the property, road centered in frame.",
+    "Slow pan across the road frontage and entry point, framing held level.",
+  ],
+  water_frontage: [
+    "Slow push-in toward the water frontage, shoreline held centered with calm reflections.",
+    "Slow pan along the shoreline, water and bank passing evenly through frame.",
+    "Slow rise revealing the water frontage and the land behind it.",
+  ],
 };
 
 /**
