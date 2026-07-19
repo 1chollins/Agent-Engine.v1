@@ -20,7 +20,7 @@ import type { ContentPiece } from "@/types/content";
 export async function runVideoGeneration(
   listingId: string,
   packageId: string
-): Promise<{ succeeded: number; failed: number }> {
+): Promise<{ succeeded: number; failed: number; degraded: number }> {
   const supabase = createServiceClient();
 
   const { data: listing } = await supabase
@@ -52,6 +52,10 @@ export async function runVideoGeneration(
 
   let succeeded = 0;
   let failed = 0;
+  // A reel that fell back to a single unstitched clip still ships, so it is
+  // not "failed" — but it is not a reel either. Counted separately so the
+  // condition is visible instead of hiding inside a success total.
+  let degraded = 0;
 
   // Process reels sequentially to stay within Runway rate limits
   // (each reel already uses up to MAX_CONCURRENT parallel clip generations)
@@ -125,8 +129,14 @@ export async function runVideoGeneration(
         });
         finalAssetPath = result.outputPath;
       } catch (stitchErr) {
-        const stitchMsg = stitchErr instanceof Error ? stitchErr.message : "Unknown";
-        console.warn(`Stitching failed for day ${piece.day_number}, using first clip: ${stitchMsg}`);
+        const stitchMsg =
+          stitchErr instanceof Error ? stitchErr.message : "Unknown";
+        // error, not warn: the customer receives a single clip in place of a
+        // reel, which is a defect even though the package still delivers.
+        console.error(
+          `STITCH FAILED — day ${piece.day_number} of listing ${listingId} ` +
+            `is shipping as one unstitched clip: ${stitchMsg}`
+        );
         // Fallback: copy first clip as the reel asset
         const firstClip = clipStoragePaths[0];
         finalAssetPath = `${typedListing.user_id}/${listingId}/reels/day-${piece.day_number}.mp4`;
@@ -139,7 +149,22 @@ export async function runVideoGeneration(
             .from("generated-content")
             .upload(finalAssetPath, buffer, { contentType: "video/mp4", upsert: true });
         }
-        stitchNote = " (unstitched — FFmpeg not available)";
+        // Record the real reason. This previously hardcoded "FFmpeg not
+        // available", so every stitch failure — whatever its actual cause —
+        // was filed under one misleading explanation.
+        stitchNote = ` (unstitched — single clip only: ${stitchMsg})`;
+        degraded++;
+
+        await supabase.from("cost_logs").insert({
+          listing_id: listingId,
+          content_piece_id: piece.id,
+          service: "creatomate",
+          endpoint: "self-hosted:ffmpeg-stitch",
+          cost_usd: 0,
+          response_time_ms: 0,
+          success: false,
+          error_message: stitchMsg.slice(0, 500),
+        });
       }
 
       // Update piece with final video path
@@ -179,8 +204,15 @@ export async function runVideoGeneration(
   }
 
   console.log(
-    `Video generation complete for listing ${listingId}: ${succeeded} reels succeeded, ${failed} failed`
+    `Video generation complete for listing ${listingId}: ` +
+      `${succeeded} reels succeeded, ${failed} failed, ${degraded} degraded`
   );
+  if (degraded > 0) {
+    console.error(
+      `${degraded} of ${succeeded} "succeeded" reels for listing ${listingId} ` +
+        `are unstitched single clips — check cost_logs for ffmpeg-stitch failures.`
+    );
+  }
 
-  return { succeeded, failed };
+  return { succeeded, failed, degraded };
 }
