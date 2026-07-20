@@ -62,7 +62,8 @@ export default function LandingPage() {
             </Link>
           </div>
           <p className="mt-4 text-sm text-gray-400">
-            No subscription. Pay per listing.
+            Free with any listing. No subscription — $20 unlocks a
+            watermark-free campaign.
           </p>
         </div>
       </section>
@@ -166,9 +167,13 @@ export default function LandingPage() {
               Content Package
             </p>
             <div className="mt-4 flex items-baseline justify-center gap-1">
-              <span className="text-5xl font-bold text-black">$99</span>
-              <span className="text-lg text-gray-500">/ listing</span>
+              <span className="text-5xl font-bold text-black">Free</span>
+              <span className="text-lg text-gray-500">with watermark</span>
             </div>
+            <p className="mt-2 text-sm font-medium text-gray-600">
+              $20 flat unlocks the clean, watermark-free campaign — included
+              free when you book your shoot with Frame &amp; Form.
+            </p>
             <ul className="mt-6 space-y-3 text-left text-sm text-gray-700">
               <PricingFeature text="5 branded static posts (IG + FB sizes)" />
               <PricingFeature text="5 cinematic video reels with music" />
@@ -185,7 +190,8 @@ export default function LandingPage() {
               Get Started Free
             </Link>
             <p className="mt-3 text-xs text-gray-400">
-              Create your account free. Only pay when you submit a listing.
+              Create your account free. Pay only if you want the watermark
+              removed — no subscription, priced per listing.
             </p>
           </div>
         </div>
@@ -213,7 +219,7 @@ export default function LandingPage() {
               title="Broker Associate, RE/MAX"
             />
             <TestimonialCard
-              quote="At $99 per listing, it's a no-brainer. I was paying a social media manager $500/month for less content than this."
+              quote="At $20 per listing, it's a no-brainer. I was paying a social media manager $500/month for less content than this."
               name="Michelle K."
               title="Team Lead, Compass"
             />

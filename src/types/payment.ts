@@ -14,6 +14,8 @@ export type Payment = {
   created_at: string;
 };
 
+// Beta pricing: $20 removes the watermark (kept in sync with
+// src/app/api/checkout/route.ts, which reads the same env var).
 export const PACKAGE_PRICE_CENTS = Number(
-  process.env.PACKAGE_PRICE_CENTS || "9900"
+  process.env.PACKAGE_PRICE_CENTS || "2000"
 );
