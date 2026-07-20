@@ -6,7 +6,6 @@ import { createListing, updateListing } from "@/lib/actions/listing";
 import { FormField } from "@/components/ui/form-field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { PROPERTY_TYPES, getPropertyClass } from "@/types/listing";
-import type { PropertyType } from "@/types/listing";
 import type { Listing, PropertyType } from "@/types/listing";
 
 type ListingDetailsFormProps = {
