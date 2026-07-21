@@ -18,14 +18,18 @@ export default function LandingPage() {
           of frameandformstudio.com rather than a separate product. */}
       <nav className="bg-forest">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-          <span className="flex items-center gap-3">
+          <a
+            href={MAIN_SITE}
+            aria-label="Frame & Form Studio homepage"
+            className="flex items-center gap-3"
+          >
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-tan font-heading text-base font-semibold text-cream">
               F&amp;F
             </span>
             <span className="font-heading text-xl font-semibold tracking-tight text-cream">
               Listing Studio
             </span>
-          </span>
+          </a>
           <div className="hidden items-center gap-8 lg:flex">
             {MAIN_NAV_LINKS.map((link) => (
               <a
