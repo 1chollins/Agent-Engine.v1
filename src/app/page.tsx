@@ -11,54 +11,13 @@ const MAIN_NAV_LINKS = [
   { href: `${MAIN_SITE}/contact`, label: "Contact" },
 ] as const;
 
-/**
- * Mirror of the main site's header so Listing Studio reads as part of
- * frameandformstudio.com rather than a separate product. Same cream
- * background, Cormorant wordmark, nav links, and tan Book Now button.
- */
-function FrameFormBar() {
-  return (
-    <header className="border-b border-cream-dark bg-cream">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
-        <a
-          href={MAIN_SITE}
-          className="font-heading text-lg font-semibold tracking-tight text-ink"
-        >
-          Frame &amp; Form Studio
-        </a>
-        <nav className="hidden items-center gap-8 md:flex">
-          {MAIN_NAV_LINKS.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className={
-                link.label === "Listing Studio"
-                  ? "text-sm font-medium text-ink"
-                  : "text-sm text-gray-600 transition-colors hover:text-ink"
-              }
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
-        <a
-          href={`${MAIN_SITE}/book`}
-          className="rounded-lg bg-tan px-5 py-2 text-sm font-semibold text-ink shadow-sm transition-colors hover:bg-sage-dark"
-        >
-          Book Now
-        </a>
-      </div>
-    </header>
-  );
-}
-
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-cream">
-      <FrameFormBar />
-      {/* Nav */}
+      {/* Nav — carries the main site's menu so Listing Studio reads as part
+          of frameandformstudio.com rather than a separate product. */}
       <nav className="bg-forest">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
           <span className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-tan font-heading text-base font-semibold text-cream">
               F&amp;F
@@ -67,6 +26,21 @@ export default function LandingPage() {
               Listing Studio
             </span>
           </span>
+          <div className="hidden items-center gap-8 lg:flex">
+            {MAIN_NAV_LINKS.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                className={
+                  link.label === "Listing Studio"
+                    ? "text-sm font-medium text-cream"
+                    : "text-sm text-cream/70 transition-colors hover:text-cream"
+                }
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
           <div className="flex items-center gap-3">
             <Link
               href="/login"
