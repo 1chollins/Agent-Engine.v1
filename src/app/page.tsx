@@ -1,9 +1,61 @@
 import Link from "next/link";
 import { MIN_PHOTOS, MAX_PHOTOS } from "@/types/listing";
 
+const MAIN_SITE = "https://www.frameandformstudio.com";
+
+const MAIN_NAV_LINKS = [
+  { href: `${MAIN_SITE}/services`, label: "Services" },
+  { href: `${MAIN_SITE}/portfolio`, label: "Portfolio" },
+  { href: "/", label: "Listing Studio" },
+  { href: `${MAIN_SITE}/about`, label: "About" },
+  { href: `${MAIN_SITE}/contact`, label: "Contact" },
+] as const;
+
+/**
+ * Mirror of the main site's header so Listing Studio reads as part of
+ * frameandformstudio.com rather than a separate product. Same cream
+ * background, Cormorant wordmark, nav links, and tan Book Now button.
+ */
+function FrameFormBar() {
+  return (
+    <header className="border-b border-cream-dark bg-cream">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
+        <a
+          href={MAIN_SITE}
+          className="font-heading text-lg font-semibold tracking-tight text-ink"
+        >
+          Frame &amp; Form Studio
+        </a>
+        <nav className="hidden items-center gap-8 md:flex">
+          {MAIN_NAV_LINKS.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              className={
+                link.label === "Listing Studio"
+                  ? "text-sm font-medium text-ink"
+                  : "text-sm text-gray-600 transition-colors hover:text-ink"
+              }
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+        <a
+          href={`${MAIN_SITE}/book`}
+          className="rounded-lg bg-tan px-5 py-2 text-sm font-semibold text-ink shadow-sm transition-colors hover:bg-sage-dark"
+        >
+          Book Now
+        </a>
+      </div>
+    </header>
+  );
+}
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-cream">
+      <FrameFormBar />
       {/* Nav */}
       <nav className="bg-forest">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
