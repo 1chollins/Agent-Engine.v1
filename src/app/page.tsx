@@ -227,31 +227,40 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social proof placeholder */}
+      {/* Credibility. Every claim in this section must be verifiable. Listing
+          Studio is new, so there are no user testimonials yet — the proof here
+          is about the studio that built and runs it. Do not add customer
+          quotes until they are real, attributable, and permitted: the FTC's
+          Rule on Consumer Reviews and Testimonials (16 CFR Part 465) makes
+          fabricated testimonials and unsubstantiated user counts civilly
+          penalisable, and this section previously shipped with placeholder
+          quotes attributed to invented agents. */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl text-center">
           <h2 className="text-3xl font-bold text-black">
-            Trusted by Growing Agents
+            Built by a working real estate photographer
           </h2>
           <p className="mt-3 text-gray-500">
-            Realtors using Listing Studio close more deals with consistent social content.
+            Listing Studio is the tool Frame &amp; Form Studio built to market its
+            own shoots. Every listing we photograph in Southwest Florida runs
+            through it.
           </p>
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-            <TestimonialCard
-              quote="I used to spend 3 hours per listing on social content. Now it takes 5 minutes to upload and I get two weeks of content."
-              name="Sarah M."
-              title="Realtor, Keller Williams"
+            <ProofCard
+              headline="Used on our own listings first"
+              body="Listing Studio came out of our own fulfilment work, not a pitch deck. The 14-day campaign is included with every Frame &amp; Form photography package."
+              source="Frame &amp; Form Studio — Cape Coral, FL"
             />
-            <TestimonialCard
-              quote="The video reels are incredible. My engagement went up 40% in the first month. Clients are actually reaching out through Instagram now."
-              name="David L."
-              title="Broker Associate, RE/MAX"
+            <ProofCard
+              headline="FAA Part 107 certified"
+              body="Licensed commercial drone operation, plus commercial and architectural work including Cleveland Clinic Naples."
+              source="Frame &amp; Form Studio credentials"
             />
-            <TestimonialCard
-              quote="At $20 per listing, it's a no-brainer. I was paying a social media manager $500/month for less content than this."
-              name="Michelle K."
-              title="Team Lead, Compass"
+            <ProofCard
+              headline="5.0 stars from 10 reviews"
+              body="Our photography clients rate the studio 5.0 on Thumbtack. Listing Studio is early — you would be one of the first agents on it."
+              source="Thumbtack, Frame &amp; Form Studio"
             />
           </div>
         </div>
@@ -264,8 +273,8 @@ export default function LandingPage() {
             Ready to Transform Your Listings?
           </h2>
           <p className="mt-4 text-lg text-gray-600">
-            Join hundreds of realtors who save hours every week with automated
-            social media content.
+            Upload one set of listing photos and get two weeks of social content
+            back. Free to try — pay only when you want the watermark gone.
           </p>
           <Link
             href="/register"
@@ -354,23 +363,27 @@ function PricingFeature({ text }: { text: string }) {
   );
 }
 
-function TestimonialCard({
-  quote,
-  name,
-  title,
+/**
+ * A verifiable credibility card. Same box as the testimonial card it replaced,
+ * so the section's layout is unchanged — but it states a fact about the studio
+ * rather than quoting a customer. If real Listing Studio testimonials arrive,
+ * add a separate quote component; do not repurpose this one.
+ */
+function ProofCard({
+  headline,
+  body,
+  source,
 }: {
-  quote: string;
-  name: string;
-  title: string;
+  headline: string;
+  body: string;
+  source: string;
 }) {
   return (
     <div className="rounded-2xl border border-sage/20 bg-white p-6 text-left">
-      <p className="text-sm leading-relaxed text-gray-600">
-        &ldquo;{quote}&rdquo;
-      </p>
+      <p className="text-sm font-semibold text-black">{headline}</p>
+      <p className="mt-2 text-sm leading-relaxed text-gray-600">{body}</p>
       <div className="mt-4 border-t border-sage/10 pt-4">
-        <p className="text-sm font-semibold text-black">{name}</p>
-        <p className="text-xs text-gray-400">{title}</p>
+        <p className="text-xs text-gray-400">{source}</p>
       </div>
     </div>
   );
