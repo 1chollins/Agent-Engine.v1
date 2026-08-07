@@ -8,6 +8,7 @@ import {
   finalizeReelRender,
   finalizeStoryRender,
   pollRenderToCompletion,
+  RenderSkippedError,
 } from "./remotion-render";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
@@ -83,6 +84,27 @@ export async function retryPiece(pieceId: string): Promise<void> {
     // Update package counts
     await updatePackageCounts(typedPiece.package_id, supabase);
   } catch (err) {
+    // A skipped render is the concurrency guard doing its job — the piece is
+    // either already finished or already being rendered by another worker.
+    // Writing `failed` over it is how 13 story pieces were destroyed: the retry
+    // set them to `pending`, the guard correctly declined a duplicate render,
+    // and this catch then buried a perfectly healthy piece.
+    //
+    // Roll the status back to what the guard actually observed and leave it be.
+    if (err instanceof RenderSkippedError) {
+      console.warn(`[retry] ${pieceId}: ${err.message}`);
+      await supabase
+        .from("content_pieces")
+        .update({
+          status: err.pieceStatus,
+          error_message: null,
+          // Not a real attempt, so don't spend one of the two retries on it.
+          retry_count: typedPiece.retry_count,
+        })
+        .eq("id", pieceId);
+      return;
+    }
+
     const message = err instanceof Error ? err.message : "Unknown error";
     await supabase
       .from("content_pieces")

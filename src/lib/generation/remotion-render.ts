@@ -62,6 +62,29 @@ function requireEnv(name: string): string {
   return value;
 }
 
+/**
+ * Thrown when a render is declined because the piece is already complete or
+ * already being rendered by someone else. This is the guard working, not a
+ * failure — the piece is fine and something else is looking after it.
+ *
+ * It needs to be a distinct type because callers used to catch the plain Error
+ * these cases threw and mark the piece `failed`. Thirteen story pieces died
+ * that way: the concurrency guard fired correctly, the generic catch treated it
+ * as a broken render, and a piece that was mid-flight got a permanent failure
+ * written over the top of it.
+ */
+export class RenderSkippedError extends Error {
+  readonly pieceId: string;
+  readonly pieceStatus: "complete" | "processing";
+
+  constructor(pieceId: string, pieceStatus: "complete" | "processing", message: string) {
+    super(message);
+    this.name = "RenderSkippedError";
+    this.pieceId = pieceId;
+    this.pieceStatus = pieceStatus;
+  }
+}
+
 export type StartRenderResult = {
   renderId: string;
   bucketName: string;
@@ -93,12 +116,16 @@ async function startRender(
   const typedPiece = piece as ContentPiece;
 
   if (typedPiece.status === "complete") {
-    throw new Error(
+    throw new RenderSkippedError(
+      typedPiece.id,
+      "complete",
       `Piece ${typedPiece.id} (day ${dayNumber}) is already complete — skipping duplicate render`
     );
   }
   if (typedPiece.status === "processing") {
-    throw new Error(
+    throw new RenderSkippedError(
+      typedPiece.id,
+      "processing",
       `Piece ${typedPiece.id} (day ${dayNumber}) is already processing — skipping duplicate render`
     );
   }
