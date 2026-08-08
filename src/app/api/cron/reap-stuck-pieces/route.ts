@@ -21,7 +21,11 @@ import { createServiceClient } from "@/lib/supabase/server";
  * claiming to be in progress. A failed piece is honest and retryable; a piece
  * frozen in `processing` is neither.
  *
- * Schedule: hourly (see vercel.json). Guarded by CRON_SECRET, fail-closed.
+ * Schedule: once daily (see vercel.json). Not hourly — this account is on the
+ * Vercel Hobby plan, where any cron expression firing more than once a day
+ * fails the deployment. So a stuck piece can sit for up to a day before it is
+ * reaped, which is a real limitation but still a world away from the 28 days
+ * these pieces had accumulated. Guarded by CRON_SECRET, fail-closed.
  */
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
