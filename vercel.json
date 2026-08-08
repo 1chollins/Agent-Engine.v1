@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
-      "comment": "Stuck-render sweep. DAILY, not hourly: this account is on the Vercel Hobby plan, where any cron expression that would fire more than once a day fails the deployment outright. An hourly '0 * * * *' here is exactly what broke the 2026-08-07 deploy. Hobby also fires at any point inside the given hour, so treat 09:00 UTC as approximate. Change to hourly only after upgrading to Pro.",
       "path": "/api/cron/reap-stuck-pieces",
       "schedule": "0 9 * * *"
     }
