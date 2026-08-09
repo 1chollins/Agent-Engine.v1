@@ -298,15 +298,129 @@ Return ONLY the JSON array, no other text.`;
     success: true,
   });
 
-  // Parse response
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) {
-    throw new Error(`Failed to parse ${type} caption response`);
-  }
-
-  const parsed = JSON.parse(jsonMatch[0]) as BatchCaptionResult[];
+  const parsed = parseCaptionArray(text, type, response.stop_reason);
   return parsed.map((item) => ({
     ...item,
     content_type: type,
   }));
+}
+
+/**
+ * Parse the model's JSON array, and when it can't be parsed, say why.
+ *
+ * Ten post pieces failed in April with:
+ *
+ *   Caption generation failed: Expected ',' or '}' after property value in
+ *   JSON at position 7320 (line 22 column 627)
+ *
+ * That message says nothing about the actual problem. The likely cause is
+ * truncation: this call asks for up to 14 captions in one response against a
+ * 4096-token budget, and when the model runs out mid-string the JSON is cut
+ * off. `JSON.parse` then reports a syntax error deep inside the text, which
+ * reads like malformed output rather than an output that simply stopped.
+ *
+ * So: check `stop_reason` first and name truncation explicitly, recover the
+ * complete objects where the tail is the only casualty, and if it still fails,
+ * throw an error that carries the stop reason and the text around the break.
+ */
+function parseCaptionArray(
+  text: string,
+  type: ContentType,
+  stopReason: string | null,
+): BatchCaptionResult[] {
+  const truncated = stopReason === "max_tokens";
+
+  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  if (jsonMatch) {
+    try {
+      return JSON.parse(jsonMatch[0]) as BatchCaptionResult[];
+    } catch (err) {
+      const salvaged = salvageObjects(jsonMatch[0]);
+      if (salvaged.length > 0) {
+        console.warn(
+          `[captions] ${type}: array failed to parse but ${salvaged.length} complete ` +
+            `object(s) were recovered${truncated ? " (response hit the token limit)" : ""}.`,
+        );
+        return salvaged;
+      }
+      throw new Error(caption_failure(type, truncated, text, err));
+    }
+  }
+
+  // No closing bracket at all — the classic shape of a response cut off
+  // mid-flight. Salvage whatever whole objects arrived before the cut.
+  const salvaged = salvageObjects(text);
+  if (salvaged.length > 0) {
+    console.warn(
+      `[captions] ${type}: response had no complete array; recovered ` +
+        `${salvaged.length} object(s)${truncated ? " before the token limit" : ""}.`,
+    );
+    return salvaged;
+  }
+
+  throw new Error(caption_failure(type, truncated, text, null));
+}
+
+/** Pull out every syntactically complete {...} object, ignoring a broken tail. */
+function salvageObjects(text: string): BatchCaptionResult[] {
+  const objects: BatchCaptionResult[] = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+
+    if (ch === '"') inString = true;
+    else if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        try {
+          const candidate = JSON.parse(text.slice(start, i + 1)) as BatchCaptionResult;
+          // Only keep objects that carry the field everything downstream keys on.
+          if (candidate && typeof candidate.day_number === "number") {
+            objects.push(candidate);
+          }
+        } catch {
+          // Incomplete or malformed object — skip it, keep scanning.
+        }
+        start = -1;
+      }
+    }
+  }
+
+  return objects;
+}
+
+/** Build an error message a human can act on. */
+function caption_failure(
+  type: ContentType,
+  truncated: boolean,
+  text: string,
+  err: unknown,
+): string {
+  const reason = truncated
+    ? "the model hit its max_tokens limit and the JSON was cut off mid-response — " +
+      "ask for fewer captions per call or raise max_tokens"
+    : "the model returned text that is not a parseable JSON array";
+
+  const detail = err instanceof Error && err.message ? ` Parser said: ${err.message}.` : "";
+  const preview = text.trim().slice(-220).replace(/\s+/g, " ");
+
+  return (
+    `Caption generation failed for ${type}: ${reason}.${detail} ` +
+    `stop_reason=${truncated ? "max_tokens" : "other"}, response length=${text.length}. ` +
+    `Response ended with: …${preview}`
+  );
 }
