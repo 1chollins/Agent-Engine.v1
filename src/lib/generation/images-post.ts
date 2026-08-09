@@ -5,6 +5,7 @@ import { loadListingPhoto, loadBrandAsset } from "./photo-loader";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import type { ContentPiece } from "@/types/content";
+import { describeError } from "./describe-error";
 
 type PostImageResult = {
   pieceId: string;
@@ -124,7 +125,7 @@ export async function generatePostImages(
         assetPathAlt: fbPath,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = describeError(err);
       console.error(`Post image generation failed for day ${piece.day_number}:`, message);
       errors.push(`Day ${piece.day_number}: ${message}`);
 

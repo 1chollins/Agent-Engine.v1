@@ -5,6 +5,7 @@ import { loadListingPhoto, loadBrandAsset } from "./photo-loader";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import type { ContentPiece } from "@/types/content";
+import { describeError } from "./describe-error";
 
 type StoryImageResult = {
   pieceId: string;
@@ -97,7 +98,7 @@ export async function generateStoryImages(
 
       results.push({ pieceId: piece.id, assetPath: storagePath });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = describeError(err);
       console.error(`Story image failed for day ${piece.day_number}:`, message);
       errors.push(`Day ${piece.day_number}: ${message}`);
 

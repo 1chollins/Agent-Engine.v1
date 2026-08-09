@@ -1,5 +1,6 @@
 import RunwayML from "@runwayml/sdk";
 import { createServiceClient } from "@/lib/supabase/server";
+import { describeError } from "./describe-error";
 
 function getRunwayClient() {
   return new RunwayML({ apiKey: process.env.RUNWAY_API_KEY! });
@@ -145,7 +146,7 @@ async function generateSingleClip(
     throw new Error("Runway task timed out after max poll attempts");
   } catch (err) {
     const elapsed = Date.now() - startTime;
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message = describeError(err);
 
     await supabase.from("cost_logs").insert({
       listing_id: listingId,

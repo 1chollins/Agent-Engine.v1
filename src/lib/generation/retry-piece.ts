@@ -13,6 +13,7 @@ import {
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import type { ContentPiece } from "@/types/content";
+import { describeError } from "./describe-error";
 
 const MAX_RETRIES = 2;
 
@@ -105,7 +106,7 @@ export async function retryPiece(pieceId: string): Promise<void> {
       return;
     }
 
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message = describeError(err);
     await supabase
       .from("content_pieces")
       .update({

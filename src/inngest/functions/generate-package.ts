@@ -23,6 +23,7 @@ import {
   KLING_POLL_INTERVAL,
 } from "@/lib/generation/motion-stage";
 import { MOTION_PIPELINE_ENABLED } from "@/lib/generation/motion-config";
+import { describeError } from "@/lib/generation/describe-error";
 
 const REEL_DAYS = [2, 5, 8, 11, 14];
 const STORY_DAYS = [3, 6, 9, 12];
@@ -282,7 +283,7 @@ export const generatePackage = inngest.createFunction(
             markPieceFailed(
               pieceId,
               `Render status polling failed: ${
-                err instanceof Error ? err.message : "unknown error"
+                describeError(err)
               }`
             )
           );
@@ -368,7 +369,7 @@ export const generatePackage = inngest.createFunction(
             markPieceFailed(
               pieceId,
               `Render status polling failed: ${
-                err instanceof Error ? err.message : "unknown error"
+                describeError(err)
               }`
             )
           );

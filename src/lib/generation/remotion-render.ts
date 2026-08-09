@@ -36,6 +36,7 @@ import {
   seedFromPieceId,
 } from "./composition-map";
 import type { ContentPiece } from "@/types/content";
+import { describeError } from "./describe-error";
 
 const DEFAULT_REGION: AwsRegion = "us-east-1";
 
@@ -226,7 +227,7 @@ async function startRender(
       templateKey,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message = describeError(err);
     await markPieceFailed(typedPiece.id, message);
     throw err;
   }
@@ -420,11 +421,22 @@ export async function markPieceFailed(
   errorMessage: string
 ): Promise<void> {
   const supabase = createServiceClient();
+
+  // Last line of defence for the reason string. Callers are supposed to pass
+  // describeError(err), but some pass a hand-written message and at least one
+  // upstream path has historically passed "" — which is how 20 of the 42 failed
+  // pieces ended up recorded as the literal "Video generation failed: " with
+  // nothing after the colon. A failure with no reason cannot be fixed, so never
+  // write one.
+  const reason = errorMessage?.trim()
+    ? errorMessage.trim()
+    : "no reason captured — the thrown error had an empty message; check the Inngest run logs for this piece";
+
   await supabase
     .from("content_pieces")
     .update({
       status: "failed",
-      error_message: `Video generation failed: ${errorMessage}`,
+      error_message: `Video generation failed: ${reason}`,
     })
     .eq("id", pieceId);
 }

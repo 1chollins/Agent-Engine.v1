@@ -8,6 +8,7 @@ import { stitchReelVideo } from "./video-stitch";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import type { ContentPiece } from "@/types/content";
+import { describeError } from "./describe-error";
 
 /**
  * Generates all 5 reel videos for a content package.
@@ -187,7 +188,7 @@ export async function runVideoGeneration(
         `${clips.length} clips`
       );
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = describeError(err);
       console.error(`Reel day ${piece.day_number} failed:`, message);
 
       await supabase

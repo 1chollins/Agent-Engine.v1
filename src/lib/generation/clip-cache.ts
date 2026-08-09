@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { createServiceClient } from "@/lib/supabase/server";
 import { getPhotoSignedUrls } from "./video-clips";
 import { startKlingClip, pollKlingClip } from "./kling-render";
+import { describeError } from "./describe-error";
 
 // Duration and model are constants in v1, so only the prompt is hashed.
 // If duration becomes configurable, fold it into the hash input.
@@ -71,7 +72,7 @@ export async function getOrRenderClip(
       });
       return { videoUrl, cached: false };
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = describeError(err);
       await supabase
         .from("kling_clips")
         .update({ status: "failed", error_message: message })
@@ -130,7 +131,7 @@ export async function getOrRenderClip(
     const videoUrl = await pollKlingClip({ clipId, falRequestId });
     return { videoUrl, cached: false };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message = describeError(err);
     await supabase
       .from("kling_clips")
       .update({ status: "failed", error_message: message })
@@ -233,7 +234,7 @@ export async function getCachedClipOrSubmit(params: {
     });
     return { status: "submitted", clipId, falRequestId };
   } catch (err) {
-    const error = err instanceof Error ? err.message : "Unknown error";
+    const error = describeError(err);
     await supabase
       .from("kling_clips")
       .update({ status: "failed", error_message: error })
