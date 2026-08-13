@@ -1,6 +1,7 @@
 import ffmpeg from "fluent-ffmpeg";
 import { createServiceClient } from "@/lib/supabase/server";
 import { selectMusicTrack } from "./music";
+import { planCutRhythm, zoomExpression } from "./cut-rhythm";
 import { join } from "path";
 import { mkdirSync, existsSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { tmpdir } from "os";
@@ -10,15 +11,17 @@ const OUTPUT_WIDTH = 1080;
 const OUTPUT_HEIGHT = 1920;
 const FPS = 30;
 
-// Cuts land on the beat of the selected track. Holds are whole bars (4 beats)
-// so the rhythm sits on the phrasing of the music — an arbitrary 7-beat hold
-// still lands on a beat but reads as a stumble. Largest that fits wins.
-const PREFERRED_BEATS_PER_CUT = [8, 4];
-
 // Hard cuts on the beat are what make a reel read as "edited" rather than as a
-// slideshow. A crossfade smears the cut across the downbeat and kills that.
-// Set > 0 only if you deliberately want the softer look.
-const TRANSITION_DURATION = 0;
+// slideshow. A crossfade smears the cut across the downbeat and kills that, so
+// the cuts stay hard and the variation comes from the rhythm instead — see
+// cut-rhythm.ts.
+//
+// Shots are pre-scaled above the output size before the zoom is applied, so a
+// push-in crops into real pixels rather than upscaling past native and going
+// soft. 1.15x covers the 6% travel with margin to spare.
+const PRESCALE = 1.15;
+const PRESCALE_WIDTH = Math.round(OUTPUT_WIDTH * PRESCALE);
+const PRESCALE_HEIGHT = Math.round(OUTPUT_HEIGHT * PRESCALE);
 
 const AUDIO_FADE_IN = 0.3;
 const AUDIO_FADE_OUT = 1.5;
@@ -60,40 +63,6 @@ function probeDuration(path: string): Promise<number> {
       resolve(d);
     });
   });
-}
-
-/**
- * Chooses a single hold length, in whole beats, that every shot will use.
- *
- * A uniform hold gives the reel an even rhythm, and quantising it to the beat
- * means each cut lands on the music instead of drifting against it. The hold is
- * additionally snapped to a whole frame, because ffmpeg encodes whole frames
- * and the leftover fractions would otherwise accumulate across the reel.
- */
-export function planBeatCuts(
-  clipDurations: number[],
-  bpm: number
-): { segmentDuration: number; totalDuration: number } {
-  const beat = 60 / bpm;
-  const shortest = Math.min(...clipDurations);
-
-  // Never ask for more footage than the shortest clip actually has.
-  let beats = PREFERRED_BEATS_PER_CUT.find((b) => b * beat <= shortest);
-  if (!beats) beats = Math.max(1, Math.floor(shortest / beat));
-
-  let segment = beats * beat;
-
-  // If even a single beat overruns the shortest clip, fall back to the clip
-  // itself rather than trimming past its end.
-  if (segment > shortest) segment = shortest;
-
-  const segmentFrames = Math.max(1, Math.round(segment * FPS));
-  segment = segmentFrames / FPS;
-
-  return {
-    segmentDuration: segment,
-    totalDuration: segment * clipDurations.length,
-  };
 }
 
 /**
@@ -170,10 +139,16 @@ export async function stitchReelVideo(
     const music = selectMusicTrack(brandTone, `${listingId}-${dayNumber}`);
     const hasMusicFile = existsSync(music.path);
 
-    const { segmentDuration, totalDuration } = planBeatCuts(
+    // Same seed as the music, so a re-render of one day reproduces that day's
+    // reel exactly while the other days in the package cut differently.
+    const cuts = planCutRhythm(
       durations,
-      music.bpm
+      music.bpm,
+      listingId,
+      FPS,
+      dayNumber,
     );
+    const { segments, offsets, totalDuration } = cuts;
 
     const outputPath = join(workDir, "output.mp4");
 
@@ -202,10 +177,26 @@ export async function stitchReelVideo(
       // `increase` + crop fills 1080x1920; the previous `decrease` + pad
       // letterboxed every non-vertical clip with black bars.
       for (let i = 0; i < clipCount; i++) {
+        const hold = segments[i];
+        const holdFrames = Math.max(1, Math.round(hold * FPS));
+        const zoom = zoomExpression(cuts.moves[i], holdFrames);
+
+        // With a move, the shot is pre-scaled larger and zoompan crops back to
+        // frame; without one it scales straight to output. zoompan is the only
+        // filter that can vary scale over time — crop can move but not resize —
+        // so the still path deliberately skips it rather than paying for a
+        // per-frame filter that would do nothing.
+        const motion = zoom
+          ? `scale=${PRESCALE_WIDTH}:${PRESCALE_HEIGHT}:force_original_aspect_ratio=increase,` +
+            `crop=${PRESCALE_WIDTH}:${PRESCALE_HEIGHT},` +
+            `zoompan=z='${zoom}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':` +
+            `s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${FPS},`
+          : `scale=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:force_original_aspect_ratio=increase,` +
+            `crop=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT},`;
+
         filters.push(
-          `[${i}:v]trim=0:${segmentDuration.toFixed(3)},setpts=PTS-STARTPTS,` +
-            `scale=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:force_original_aspect_ratio=increase,` +
-            `crop=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT},` +
+          `[${i}:v]trim=0:${hold.toFixed(3)},setpts=PTS-STARTPTS,` +
+            motion +
             `setsar=1,fps=${FPS}[v${i}]`
         );
       }
@@ -213,18 +204,6 @@ export async function stitchReelVideo(
       let videoLabel: string;
       if (clipCount === 1) {
         filters.push(`[v0]null[vcat]`);
-        videoLabel = "vcat";
-      } else if (TRANSITION_DURATION > 0) {
-        let prevLabel = "v0";
-        for (let i = 1; i < clipCount; i++) {
-          const outLabel = i === clipCount - 1 ? "vcat" : `tmp${i - 1}`;
-          const offset = i * (segmentDuration - TRANSITION_DURATION);
-          filters.push(
-            `[${prevLabel}][v${i}]xfade=transition=fade:` +
-              `duration=${TRANSITION_DURATION}:offset=${offset.toFixed(3)}[${outLabel}]`
-          );
-          prevLabel = outLabel;
-        }
         videoLabel = "vcat";
       } else {
         const inputs = Array.from({ length: clipCount }, (_, i) => `[v${i}]`).join("");
@@ -243,8 +222,10 @@ export async function stitchReelVideo(
         const raw = textOverlays[i];
         if (!raw) continue;
         const text = escapeDrawtext(raw);
-        const start = i * segmentDuration + 0.2;
-        const end = (i + 1) * segmentDuration - 0.2;
+        // Holds now differ per shot, so overlay windows are read off the plan
+        // rather than multiplied out from a single segment length.
+        const start = offsets[i] + 0.2;
+        const end = offsets[i] + segments[i] - 0.2;
         if (end <= start) continue;
 
         const fontSize = fitFontSize(raw, baseFont, available);

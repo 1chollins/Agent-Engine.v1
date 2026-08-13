@@ -69,9 +69,27 @@ src/
 - Content pieces use retry_count (max 2 auto-retries) before marking as failed
 - All external API calls must be logged to cost_logs
 
+## Scheduling & publishing — IN SCOPE as of 2026-08-12
+
+The "do not build auto-posting, scheduling, or Meta API integration" rule below
+was lifted by the owner on 2026-08-12. Scheduled publishing to Instagram and
+Facebook is now a target feature. Binding constraints for it:
+
+- **Posting targets clients' accounts, not just our own.** That requires Meta
+  **Advanced Access** — App Review, Business Verification and a screencast.
+  Treat Business Verification as the critical path; it gates launch and takes
+  2–4 weeks with a real rejection rate.
+- **Schedule with Inngest, not Vercel Cron.** Vercel Hobby rejects any cron
+  firing more than once per day — this already broke a deploy on 2026-07-22.
+  Inngest is installed and wired (`src/inngest/`) and handles delayed steps.
+- **Instagram publishing limits:** 25 published posts per rolling 24h per
+  account, 50 containers unpublished at once, 200 API calls/hour per token. A
+  14-piece package fits; batching several listings in one day does not.
+- Review-then-publish is required. Nothing posts to a client's audience
+  without an explicit human action — batch, selected, or individual.
+
 ## Do NOT
 
-- Build auto-posting, scheduling, or Meta API integration (v2)
 - Build AI avatar content (v2.5)
 - Build subscription billing — v1 is per-listing only
 - Build content editing or in-app caption modification
