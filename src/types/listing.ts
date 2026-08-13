@@ -197,7 +197,23 @@ export type ListingFormState = {
 };
 
 export const MIN_PHOTOS = 20;
-export const MAX_PHOTOS = 40;
+/**
+ * The ceiling is generous on purpose. A package uses far fewer than this — the
+ * picker selects per template — but a photographer shooting a large property
+ * should be able to hand over the whole take and let the picker choose, rather
+ * than pre-culling to fit an arbitrary cap.
+ *
+ * Raising this also raises storage: the current average upload is 7.3MB, so a
+ * full 75-photo listing is roughly 550MB against the ~190MB a typical listing
+ * uses today.
+ */
+export const MAX_PHOTOS = 75;
 export const MIN_VERTICAL_PHOTOS = 5;
-export const MAX_VERTICAL_PHOTOS = 40;
-export const MAX_PHOTO_SIZE = 25 * 1024 * 1024; // 25MB
+export const MAX_VERTICAL_PHOTOS = MAX_PHOTOS;
+/**
+ * Must not exceed the `listing-photos` bucket's own file_size_limit, which is
+ * enforced by Supabase and returns a storage error the UI cannot pre-empt.
+ * Both were raised to 50MB together; changing one without the other produces
+ * an upload that passes validation and then fails on write.
+ */
+export const MAX_PHOTO_SIZE = 50 * 1024 * 1024; // 50MB
