@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
           .from("brand_profiles")
           .select("email, agent_name")
           .eq("user_id", page.user_id)
+          .eq("is_primary", true)
           .maybeSingle(),
         supabase
           .from("listings")

@@ -6,6 +6,7 @@ import type { Listing, ListingPhoto } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import { PROPERTY_TYPES, MIN_PHOTOS } from "@/types/listing";
 import { GenerateActions } from "@/components/listing/generate-actions";
+import { getBrandProfileForListing } from "@/lib/brand-profile-for-listing";
 
 type ReviewPageProps = {
   params: { id: string };
@@ -31,11 +32,8 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
     .eq("listing_id", params.id)
     .order("sort_order");
 
-  const { data: profile } = await supabase
-    .from("brand_profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
+  // Show the branding this campaign will actually wear (the listing's agent).
+  const profile = await getBrandProfileForListing(supabase, listing as Listing);
 
   const typedListing = listing as Listing;
   const typedPhotos = (photos ?? []) as ListingPhoto[];

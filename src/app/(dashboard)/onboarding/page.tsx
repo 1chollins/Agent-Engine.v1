@@ -12,6 +12,7 @@ export default async function OnboardingPage() {
     .from("brand_profiles")
     .select("*")
     .eq("user_id", user.id)
+    .eq("is_primary", true)
     .maybeSingle();
 
   // If profile is already complete, go to dashboard

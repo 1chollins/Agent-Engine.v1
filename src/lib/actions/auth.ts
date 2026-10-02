@@ -67,6 +67,7 @@ async function getPostLoginRedirect(
     .from("brand_profiles")
     .select("business_name")
     .eq("user_id", userId)
+    .eq("is_primary", true)
     .maybeSingle();
 
   return profile?.business_name ? "/dashboard" : "/onboarding";

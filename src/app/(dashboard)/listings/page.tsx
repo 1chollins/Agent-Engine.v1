@@ -25,6 +25,15 @@ export default async function ListingsPage() {
 
   const typedListings = (listings ?? []) as Listing[];
 
+  // Which agent each campaign is for — only worth showing once client agents exist.
+  const { data: profileRows } = await supabase
+    .from("brand_profiles")
+    .select("id, agent_name, is_primary")
+    .eq("user_id", user.id);
+  const profiles = (profileRows ?? []) as { id: string; agent_name: string; is_primary: boolean }[];
+  const agentNames = new Map(profiles.map((p) => [p.id, p.agent_name]));
+  const showAgent = profiles.some((p) => !p.is_primary);
+
   // Hero thumbnail per listing (hero photo, else first by sort order)
   const thumbs = new Map<string, string>();
   if (typedListings.length > 0) {
@@ -129,6 +138,9 @@ export default async function ListingsPage() {
                   <p className="font-medium text-black">{listing.address}</p>
                   <p className="mt-0.5 text-sm text-gray-500">
                     {listing.city}, {listing.state}
+                    {showAgent && agentNames.get(listing.brand_profile_id) && (
+                      <span className="text-gray-400"> · {agentNames.get(listing.brand_profile_id)}</span>
+                    )}
                   </p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold text-forest">

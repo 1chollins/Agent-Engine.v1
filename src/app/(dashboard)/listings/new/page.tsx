@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { checkBrandProfileComplete } from "@/lib/brand-profile-check";
 import { NewListingWizard } from "@/components/listing/new-listing-wizard";
 import type { Listing, ListingPhoto } from "@/types/listing";
+import type { AgentOption } from "@/types/brand-profile";
 
 type NewListingPageProps = {
   searchParams: { draft?: string; step?: string };
@@ -71,6 +72,15 @@ export default async function NewListingPage({ searchParams }: NewListingPagePro
 
   const isEditing = !!existingListing;
 
+  const { data: agentRows } = await supabase
+    .from("brand_profiles")
+    .select("id, agent_name, brokerage_name, is_primary")
+    .eq("user_id", user.id)
+    .eq("is_complete", true)
+    .order("is_primary", { ascending: false })
+    .order("agent_name");
+  const agents = (agentRows ?? []) as AgentOption[];
+
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="mb-2 text-2xl font-bold text-black sm:text-3xl">
@@ -86,6 +96,7 @@ export default async function NewListingPage({ searchParams }: NewListingPagePro
         existingListing={existingListing}
         existingPhotos={existingPhotos}
         initialStep={searchParams.step === "details" ? "details" : undefined}
+        agents={agents}
       />
     </div>
   );

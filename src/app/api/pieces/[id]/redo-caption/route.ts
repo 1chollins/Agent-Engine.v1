@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { regeneratePieceCaptions } from "@/lib/generation/captions";
+import { getBrandProfileForListing } from "@/lib/brand-profile-for-listing";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import type { ContentPiece } from "@/types/content";
@@ -59,11 +60,7 @@ export async function POST(
     return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   }
 
-  const { data: brand } = await supabase
-    .from("brand_profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
+  const brand = await getBrandProfileForListing(supabase, listing as Listing);
   if (!brand) {
     return NextResponse.json({ error: "Brand profile not found" }, { status: 400 });
   }

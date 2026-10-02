@@ -2,7 +2,7 @@
 
 import { useFormState } from "react-dom";
 import { useCallback, useState } from "react";
-import { createBrandProfile, updateBrandProfile } from "@/lib/actions/brand-profile";
+import { createBrandProfile, updateBrandProfile, saveAgentProfile } from "@/lib/actions/brand-profile";
 import { FormField } from "@/components/ui/form-field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ImageUpload } from "@/components/brand/image-upload";
@@ -15,10 +15,30 @@ type BrandProfileFormProps = {
   mode: "create" | "edit";
   userId: string;
   initialData?: BrandProfile | null;
+  /**
+   * "account" (default) edits the login's own profile. "agent" edits a client
+   * agent's profile; pass profileId (existing id, or a fresh UUID for a new one).
+   */
+  variant?: "account" | "agent";
+  profileId?: string;
 };
 
-export function BrandProfileForm({ mode, userId, initialData }: BrandProfileFormProps) {
-  const action = mode === "create" ? createBrandProfile : updateBrandProfile;
+export function BrandProfileForm({
+  mode,
+  userId,
+  initialData,
+  variant = "account",
+  profileId,
+}: BrandProfileFormProps) {
+  const isAgent = variant === "agent";
+  const action = isAgent
+    ? saveAgentProfile
+    : mode === "create"
+      ? createBrandProfile
+      : updateBrandProfile;
+  // Each agent's images live in their own folder so one agent's upload can
+  // never overwrite another's (or the account's) headshot.
+  const assetPrefix = isAgent ? `${userId}/agents/${profileId}` : userId;
   const [state, formAction] = useFormState(action, {
     error: null,
     success: null,
@@ -36,6 +56,7 @@ export function BrandProfileForm({ mode, userId, initialData }: BrandProfileForm
 
   return (
     <form action={formAction} className="space-y-8">
+      {isAgent && <input type="hidden" name="profile_id" value={profileId} />}
       {state.error && (
         <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
           {state.error}
@@ -107,7 +128,7 @@ export function BrandProfileForm({ mode, userId, initialData }: BrandProfileForm
             label="Headshot *"
             name="headshot"
             bucket="brand-assets"
-            storagePath={`${userId}/headshot`}
+            storagePath={`${assetPrefix}/headshot`}
             accept="image/jpeg,image/png"
             currentPath={initialData?.headshot_path}
             onUploaded={handleHeadshotUploaded}
@@ -116,7 +137,7 @@ export function BrandProfileForm({ mode, userId, initialData }: BrandProfileForm
             label="Logo *"
             name="logo"
             bucket="brand-assets"
-            storagePath={`${userId}/logo`}
+            storagePath={`${assetPrefix}/logo`}
             accept="image/jpeg,image/png,image/svg+xml"
             currentPath={initialData?.logo_path}
             onUploaded={handleLogoUploaded}
@@ -162,7 +183,9 @@ export function BrandProfileForm({ mode, userId, initialData }: BrandProfileForm
       </section>
 
       <SubmitButton pendingText={mode === "create" ? "Saving profile..." : "Updating profile..."}>
-        {mode === "create" ? "Save & Continue" : "Update Profile"}
+        {isAgent
+          ? mode === "create" ? "Save Agent" : "Update Agent"
+          : mode === "create" ? "Save & Continue" : "Update Profile"}
       </SubmitButton>
     </form>
   );

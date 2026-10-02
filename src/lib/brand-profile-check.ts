@@ -24,6 +24,7 @@ export async function checkBrandProfileComplete(userId: string): Promise<CheckRe
     .from("brand_profiles")
     .select("*")
     .eq("user_id", userId)
+    .eq("is_primary", true)
     .maybeSingle();
 
   if (!profile) {

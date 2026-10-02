@@ -52,7 +52,7 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(4),
-    supabase.from("brand_profiles").select("agent_name").eq("user_id", user.id).maybeSingle(),
+    supabase.from("brand_profiles").select("agent_name").eq("user_id", user.id).eq("is_primary", true).maybeSingle(),
   ]);
 
   const typedListings = (listings ?? []) as Listing[];

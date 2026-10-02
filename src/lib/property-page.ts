@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { getBrandProfileForListing } from "@/lib/brand-profile-for-listing";
 import type { Listing, ListingPhoto } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 
@@ -100,16 +101,18 @@ export async function getPropertyPageData(slug: string): Promise<PropertyPageDat
     .maybeSingle();
   if (!page || !page.published) return null;
 
-  const [{ data: listing }, { data: brand }, { data: photos }] = await Promise.all([
+  const [{ data: listing }, { data: photos }] = await Promise.all([
     supabase.from("listings").select("*").eq("id", page.listing_id).single(),
-    supabase.from("brand_profiles").select("*").eq("user_id", page.user_id).maybeSingle(),
     supabase
       .from("listing_photos")
       .select("file_path, is_hero, sort_order")
       .eq("listing_id", page.listing_id)
       .order("sort_order"),
   ]);
-  if (!listing || !brand) return null;
+  if (!listing) return null;
+  // The page wears the listing's agent, not necessarily the account owner.
+  const brand = await getBrandProfileForListing(supabase, listing as Listing);
+  if (!brand) return null;
 
   const typedBrand = brand as BrandProfile;
   const photoRows = (photos ?? []) as Pick<ListingPhoto, "file_path" | "is_hero" | "sort_order">[];

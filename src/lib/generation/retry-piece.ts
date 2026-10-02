@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { getBrandProfileForListing } from "@/lib/brand-profile-for-listing";
 import { generateCaptionsBatch } from "./captions";
 import { generateStoryText } from "./stories";
 import { generatePostImages } from "./images-post";
@@ -195,11 +196,9 @@ async function retryStory(
       .eq("id", listingId)
       .single();
 
-    const { data: brand } = await supabase
-      .from("brand_profiles")
-      .select("*")
-      .eq("user_id", (listing as Record<string, unknown>)?.user_id as string)
-      .single();
+    const brand = listing
+      ? await getBrandProfileForListing(supabase, listing as Listing)
+      : null;
 
     if (listing && brand) {
       const stories = await generateStoryText(

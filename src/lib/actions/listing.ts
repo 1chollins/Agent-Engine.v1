@@ -34,13 +34,15 @@ export async function createListing(
   const validationError = validateListingFields(fields);
   if (validationError) return { error: validationError, success: null };
 
-  const { data: profile } = await supabase
-    .from("brand_profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
+  const pickedProfileId = (formData.get("brand_profile_id") as string) || null;
+  const profile = await resolveBrandProfile(supabase, user.id, pickedProfileId);
 
-  if (!profile) return { error: "Complete your brand profile first", success: null };
+  if (!profile) {
+    return {
+      error: pickedProfileId ? "Pick an agent from your Agents list" : "Complete your brand profile first",
+      success: null,
+    };
+  }
 
   const { data, error } = await supabase
     .from("listings")
@@ -71,9 +73,18 @@ export async function updateListing(
   const validationError = validateListingFields(fields);
   if (validationError) return { error: validationError, success: null };
 
+  // Changing the agent is allowed while editing; it must be one this account owns.
+  const pickedProfileId = (formData.get("brand_profile_id") as string) || null;
+  let brandUpdate: { brand_profile_id?: string } = {};
+  if (pickedProfileId) {
+    const profile = await resolveBrandProfile(supabase, user.id, pickedProfileId);
+    if (!profile) return { error: "Pick an agent from your Agents list", success: null };
+    brandUpdate = { brand_profile_id: profile.id };
+  }
+
   const { error } = await supabase
     .from("listings")
-    .update({ ...fields, updated_at: new Date().toISOString() })
+    .update({ ...fields, ...brandUpdate, updated_at: new Date().toISOString() })
     .eq("id", listingId)
     .eq("user_id", user.id);
 
@@ -200,6 +211,22 @@ export async function setHeroPhoto(
 
   if (error) return { error: error.message };
   return { error: null };
+}
+
+/**
+ * The profile a listing will wear: the picked client agent (only if this
+ * account owns it), otherwise the account's own primary profile.
+ */
+async function resolveBrandProfile(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  pickedProfileId: string | null
+): Promise<{ id: string } | null> {
+  const query = supabase.from("brand_profiles").select("id").eq("user_id", userId);
+  const { data } = pickedProfileId
+    ? await query.eq("id", pickedProfileId).maybeSingle()
+    : await query.eq("is_primary", true).maybeSingle();
+  return (data as { id: string } | null) ?? null;
 }
 
 function extractListingFields(formData: FormData) {

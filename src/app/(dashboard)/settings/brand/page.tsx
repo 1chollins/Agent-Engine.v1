@@ -12,6 +12,7 @@ export default async function EditBrandProfilePage() {
     .from("brand_profiles")
     .select("*")
     .eq("user_id", user.id)
+    .eq("is_primary", true)
     .maybeSingle();
 
   // If no profile exists, redirect to onboarding

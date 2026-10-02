@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { ListingDetailsForm } from "@/components/listing/listing-details-form";
 import { PhotoUpload } from "@/components/listing/photo-upload";
 import type { Listing, ListingPhoto } from "@/types/listing";
+import type { AgentOption } from "@/types/brand-profile";
 
 type NewListingWizardProps = {
   userId: string;
   existingListing?: Listing | null;
   existingPhotos?: ListingPhoto[];
   initialStep?: "details" | "photos";
+  agents?: AgentOption[];
 };
 
 export function NewListingWizard({
@@ -18,6 +20,7 @@ export function NewListingWizard({
   existingListing,
   existingPhotos = [],
   initialStep,
+  agents = [],
 }: NewListingWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState<"details" | "photos">(
@@ -71,6 +74,7 @@ export function NewListingWizard({
             mode={existingListing ? "edit" : "create"}
             initialData={existingListing}
             onSaved={handleDetailsSaved}
+            agents={agents}
           />
         </div>
       )}

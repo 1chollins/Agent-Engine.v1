@@ -7,14 +7,20 @@ import { FormField } from "@/components/ui/form-field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { PROPERTY_TYPES, getPropertyClass } from "@/types/listing";
 import type { Listing, PropertyType } from "@/types/listing";
+import type { AgentOption } from "@/types/brand-profile";
+import Link from "next/link";
 
 type ListingDetailsFormProps = {
   mode: "create" | "edit";
   initialData?: Listing | null;
   onSaved?: (listingId: string) => void;
+  /** Profiles this campaign can wear. The picker shows once there are client agents. */
+  agents?: AgentOption[];
 };
 
-export function ListingDetailsForm({ mode, initialData, onSaved }: ListingDetailsFormProps) {
+export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: ListingDetailsFormProps) {
+  const defaultAgentId =
+    initialData?.brand_profile_id ?? agents.find((a) => a.is_primary)?.id ?? agents[0]?.id ?? "";
   const action = mode === "create" ? createListing : updateListing;
   const [state, formAction] = useFormState(action, {
     error: null,
@@ -45,6 +51,34 @@ export function ListingDetailsForm({ mode, initialData, onSaved }: ListingDetail
         <p className="rounded-md bg-red-50 p-3 text-sm text-red-600">
           {state.error}
         </p>
+      )}
+
+      {/* Agent — whose branding this campaign carries */}
+      {agents.length > 1 && (
+        <section className="space-y-2 rounded-xl border border-forest/20 bg-cream/40 p-4">
+          <label htmlFor="brand_profile_id" className="block text-sm font-semibold text-black">
+            Agent *
+          </label>
+          <select
+            id="brand_profile_id"
+            name="brand_profile_id"
+            required
+            defaultValue={defaultAgentId}
+            className="block w-full rounded-lg border border-sage bg-white px-3 py-2.5 text-sm shadow-sm focus:border-sage-darker focus:outline-none focus:ring-1 focus:ring-sage-darker"
+          >
+            {agents.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.is_primary ? `${a.agent_name} (you)` : `${a.agent_name} — ${a.brokerage_name}`}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500">
+            Their headshot, name, brokerage and colors go on every post, reel and story.{" "}
+            <Link href="/agents/new" className="font-medium text-forest underline underline-offset-2">
+              Add an agent
+            </Link>
+          </p>
+        </section>
       )}
 
       {/* Address Section */}

@@ -36,6 +36,7 @@ export default async function QuickPostPage() {
     .from("brand_profiles")
     .select("*")
     .eq("user_id", user.id)
+    .eq("is_primary", true)
     .maybeSingle();
 
   let initialBrand: InitialBrand | undefined;

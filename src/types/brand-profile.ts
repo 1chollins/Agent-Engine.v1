@@ -16,8 +16,18 @@ export type BrandProfile = {
   accent_color: string | null;
   tone: BrandTone;
   is_complete: boolean;
+  /** The account's own profile. Client agents are extra rows with false. */
+  is_primary: boolean;
   created_at: string;
   updated_at: string;
+};
+
+/** A profile the listing form can pick: the account's own, or a client agent. */
+export type AgentOption = {
+  id: string;
+  agent_name: string;
+  brokerage_name: string;
+  is_primary: boolean;
 };
 
 export type BrandTone = "professional" | "friendly" | "luxury" | "casual";

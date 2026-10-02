@@ -28,6 +28,7 @@ import {
   type AwsRegion,
 } from "@remotion/lambda/client";
 import { createServiceClient } from "@/lib/supabase/server";
+import { getBrandProfileForListing } from "@/lib/brand-profile-for-listing";
 import { getPhotoSignedUrls } from "./video-clips";
 import {
   COMPOSITION_DEFS,
@@ -158,11 +159,10 @@ async function startRender(
     const ls = listing as Record<string, unknown>;
     const userId = ls.user_id as string;
 
-    const { data: brand } = await supabase
-      .from("brand_profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
+    const brand = await getBrandProfileForListing(supabase, {
+      user_id: userId,
+      brand_profile_id: ls.brand_profile_id as string | null,
+    });
 
     await supabase
       .from("content_pieces")
