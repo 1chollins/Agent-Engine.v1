@@ -5,6 +5,9 @@ import type { Listing } from "@/types/listing";
 import type { ContentPackage } from "@/types/content";
 
 const PREVIEW_COUNT = 7;
+/** Campaigns shown before "Show all" — each one loads up to 7 thumbnails,
+ *  and on a phone 35 campaigns' worth of video previews is a lot of data. */
+const CAMPAIGN_LIMIT = 8;
 const QUICK_POST_PREVIEW_COUNT = 12;
 
 type PiecePreview = {
@@ -29,7 +32,11 @@ type QuickPostPreview = {
   url: string | null;
 };
 
-export default async function ContentPage() {
+export default async function ContentPage({
+  searchParams,
+}: {
+  searchParams?: { all?: string };
+}) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -42,7 +49,10 @@ export default async function ContentPage() {
     .in("status", ["complete", "partial_failure", "processing"])
     .order("updated_at", { ascending: false });
 
-  const typedListings = (listings ?? []) as Listing[];
+  const allListings = (listings ?? []) as Listing[];
+  const showAll = searchParams?.all === "1";
+  const typedListings = showAll ? allListings : allListings.slice(0, CAMPAIGN_LIMIT);
+  const hiddenCount = allListings.length - typedListings.length;
 
   // Load the latest package per listing
   const listingsWithStats = await Promise.all(
@@ -235,10 +245,10 @@ export default async function ContentPage() {
               <Link
                 key={listing.id}
                 href={href}
-                className="block rounded-2xl border border-forest/15 bg-white/60 p-5 transition-all hover:border-forest/40 hover:shadow-sm"
+                className="block rounded-2xl border border-forest/15 bg-white/60 p-4 transition-all hover:border-forest/40 hover:shadow-sm sm:p-5"
               >
                 {/* Property header */}
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start justify-between gap-3 sm:items-center sm:gap-4">
                   <div className="min-w-0">
                     <p className="truncate font-heading text-lg font-semibold text-ink">
                       {listing.address}
@@ -274,7 +284,7 @@ export default async function ContentPage() {
                         {piece.url ? (
                           piece.asset_type === "video" ? (
                             <video
-                              src={`${piece.url}#t=0.1`}
+                              src={`${piece.url}#t=2`}
                               preload="metadata"
                               muted
                               playsInline
@@ -319,6 +329,14 @@ export default async function ContentPage() {
             );
           })}
           </div>
+          {hiddenCount > 0 && (
+            <Link
+              href="/content?all=1"
+              className="mt-5 block rounded-xl border border-dashed border-forest/30 px-4 py-3 text-center text-sm font-medium text-forest transition-colors hover:border-forest/60 hover:bg-white/60"
+            >
+              Show all {allListings.length} campaigns
+            </Link>
+          )}
         </div>
       )}
     </div>

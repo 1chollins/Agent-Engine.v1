@@ -66,9 +66,9 @@ export default async function ListingsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-black">Campaigns</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-black sm:text-3xl">Campaigns</h1>
           <p className="mt-1 text-gray-600">
             One listing in — 14 days of posts, reels &amp; stories out.
             {typedListings.length > 0 &&
@@ -77,7 +77,7 @@ export default async function ListingsPage() {
         </div>
         <Link
           href="/listings/new"
-          className="rounded-lg bg-forest px-5 py-2.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90"
+          className="shrink-0 rounded-lg bg-forest px-5 py-2.5 text-center text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90"
         >
           New Campaign
         </Link>
@@ -120,9 +120,9 @@ export default async function ListingsPage() {
               <Link
                 key={listing.id}
                 href={href}
-                className="flex items-center gap-5 rounded-xl border border-forest/15 bg-white/60 p-3 pr-6 transition-all hover:border-forest/40 hover:shadow-sm"
+                className="flex items-center gap-3 rounded-xl border border-forest/15 bg-white/60 p-3 transition-all hover:border-forest/40 hover:shadow-sm sm:gap-5 sm:pr-6"
               >
-                <div className="h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                <div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100 sm:h-20 sm:w-28">
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={thumb} alt="" className="h-full w-full object-cover" />
@@ -135,8 +135,8 @@ export default async function ListingsPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-black">{listing.address}</p>
-                  <p className="mt-0.5 text-sm text-gray-500">
+                  <p className="truncate font-medium text-black">{listing.address}</p>
+                  <p className="mt-0.5 truncate text-sm text-gray-500">
                     {listing.city}, {listing.state}
                     {showAgent && agentNames.get(listing.brand_profile_id) && (
                       <span className="text-gray-400"> · {agentNames.get(listing.brand_profile_id)}</span>
@@ -147,13 +147,16 @@ export default async function ListingsPage() {
                       ${listing.price.toLocaleString()}
                     </span>
                     {specs.length > 0 && (
-                      <span className="text-xs text-gray-400">
+                      <span className="hidden text-xs text-gray-400 sm:inline">
                         {specs.join(" · ")}
                       </span>
                     )}
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium sm:hidden ${status.bg} ${status.text}`}>
+                      {status.label}
+                    </span>
                   </div>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <div className="hidden shrink-0 flex-col items-end gap-1.5 sm:flex">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${status.bg} ${status.text}`}>
                     {status.label}
                   </span>

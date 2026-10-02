@@ -254,8 +254,8 @@ export default async function ListingContentPage({ params }: ContentPageProps) {
       )}
 
       {/* Calendar */}
-      <section className="rounded-2xl border border-sage/20 bg-white p-6">
-        <div className="mb-5 flex items-center justify-between">
+      <section className="rounded-2xl border border-sage/20 bg-white p-3 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1 sm:mb-5 sm:px-0">
           <h2 className="text-lg font-semibold text-black">14-Day Content Calendar</h2>
           <div className="flex items-center gap-3 text-xs text-gray-400">
             <span className="flex items-center gap-1">

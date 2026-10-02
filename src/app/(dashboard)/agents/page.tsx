@@ -38,9 +38,9 @@ export default async function AgentsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-black">Agents</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-black sm:text-3xl">Agents</h1>
           <p className="mt-1 max-w-xl text-gray-600">
             Each client agent&apos;s headshot, logo, colors and brokerage. Pick the agent when you
             start a campaign and every post, reel and story carries their branding.
@@ -48,7 +48,7 @@ export default async function AgentsPage() {
         </div>
         <Link
           href="/agents/new"
-          className="shrink-0 rounded-lg bg-forest px-5 py-2.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90"
+          className="shrink-0 rounded-lg bg-forest px-5 py-2.5 text-center text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90"
         >
           Add Agent
         </Link>
@@ -109,26 +109,29 @@ function AgentRow({
   return (
     <Link
       href={href}
-      className="flex items-center gap-4 rounded-xl border border-forest/15 bg-white/60 p-3 pr-6 transition-all hover:border-forest/40 hover:shadow-sm"
+      className="flex items-center gap-3 rounded-xl border border-forest/15 bg-white/60 p-3 transition-all hover:border-forest/40 hover:shadow-sm sm:gap-4 sm:pr-6"
     >
-      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-gray-100">
+      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-100 sm:h-14 sm:w-14">
         {headshot && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={headshot} alt="" className="h-full w-full object-cover" />
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-black">{profile.agent_name}</p>
+        <p className="truncate font-medium text-black">{profile.agent_name}</p>
         <p className="mt-0.5 truncate text-sm text-gray-500">
           {[profile.agent_title, profile.brokerage_name].filter(Boolean).join(" · ")}
         </p>
         {note && <p className="mt-0.5 text-xs text-gray-400">{note}</p>}
+        <p className="mt-0.5 text-xs text-gray-500 sm:hidden">
+          {campaigns} campaign{campaigns === 1 ? "" : "s"}
+        </p>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
         <span className="h-4 w-4 rounded-full border border-black/10" style={{ backgroundColor: profile.primary_color }} />
         <span className="h-4 w-4 rounded-full border border-black/10" style={{ backgroundColor: profile.secondary_color }} />
       </div>
-      <span className="w-24 shrink-0 text-right text-xs text-gray-500">
+      <span className="hidden w-24 shrink-0 text-right text-xs text-gray-500 sm:block">
         {campaigns} campaign{campaigns === 1 ? "" : "s"}
       </span>
     </Link>

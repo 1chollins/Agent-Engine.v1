@@ -78,7 +78,7 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
           </Link>
         </div>
 
-        <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+        <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3">
           <DetailRow label="Address" value={typedListing.address} />
           <DetailRow
             label="Location"
@@ -263,9 +263,9 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="min-w-0">
       <dt className="text-sm font-medium text-gray-500">{label}</dt>
-      <dd className="mt-0.5 text-sm text-black">{value}</dd>
+      <dd className="mt-0.5 break-words text-sm text-black">{value}</dd>
     </div>
   );
 }

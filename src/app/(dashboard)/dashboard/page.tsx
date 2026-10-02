@@ -12,6 +12,24 @@ const STATUS_STYLES: Record<ListingStatus, { bg: string; text: string; label: st
   failed: { bg: "bg-red-50", text: "text-red-700", label: "Failed" },
 };
 
+/** The two things you come here to make — big picture buttons under the greeting. */
+const CREATE_CARDS = [
+  {
+    href: "/quick-post",
+    image: "/dashboard/quick-post.webp",
+    title: "Quick Post",
+    sub: "One photo in, a branded post out. Ready in seconds.",
+    cta: "Make a post",
+  },
+  {
+    href: "/listings/new",
+    image: "/dashboard/campaign.webp",
+    title: "14-Day Campaign",
+    sub: "5 posts, 5 reels and 4 stories for one listing, captioned and scheduled.",
+    cta: "Start a campaign",
+  },
+];
+
 function listingHref(listing: Listing): string {
   return listing.status === "draft"
     ? `/listings/new?draft=${listing.id}`
@@ -102,8 +120,8 @@ export default async function DashboardPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex items-end justify-between gap-4">
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-tan">
             Frame &amp; Form Studio
           </p>
@@ -113,23 +131,57 @@ export default async function DashboardPage() {
         </div>
         <Link
           href="/listings/new"
-          className="rounded-lg bg-forest px-5 py-2.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90"
+          className="hidden shrink-0 rounded-lg bg-forest px-5 py-2.5 text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90 sm:inline-block"
         >
           New Campaign
         </Link>
       </div>
 
+      {/* Create: Quick Post / 14-Day Campaign */}
+      <section aria-label="Create" className="mt-6 grid gap-3 sm:grid-cols-2 sm:gap-4">
+        {CREATE_CARDS.map((card) => (
+          <Link
+            key={card.href}
+            href={card.href}
+            className="group flex flex-col overflow-hidden rounded-2xl border border-forest/15 bg-white/70 shadow-sm transition-all hover:-translate-y-0.5 hover:border-forest/40 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest lg:flex-row lg:items-stretch"
+          >
+            <div className="relative aspect-[2/1] w-full shrink-0 overflow-hidden bg-cream-dark lg:w-[54%]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={card.image}
+                alt=""
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              />
+            </div>
+            <div className="flex flex-1 items-center justify-between gap-3 px-4 py-3.5 sm:px-5 sm:py-4 lg:flex-col lg:items-start lg:justify-center lg:gap-3">
+              <div className="min-w-0">
+                <p className="font-heading text-xl font-semibold leading-tight text-ink sm:text-2xl">
+                  {card.title}
+                </p>
+                <p className="mt-1 text-sm leading-snug text-ink/60">{card.sub}</p>
+              </div>
+              <span className="flex shrink-0 items-center gap-2 rounded-full bg-forest px-3.5 py-2 text-sm font-semibold text-cream transition-colors group-hover:bg-forest/90">
+                <span className="hidden lg:inline">{card.cta}</span>
+                <span aria-hidden>→</span>
+              </span>
+            </div>
+          </Link>
+        ))}
+      </section>
+
       {/* Stat cards */}
-      <section className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
-        {stats.map((s) => (
+      <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {stats.map((s, i) => (
           <div
             key={s.label}
-            className="rounded-2xl border border-forest/15 bg-white/60 p-5"
+            className={`rounded-2xl border border-forest/15 bg-white/60 p-4 sm:p-5 ${
+              i === stats.length - 1 ? "col-span-2 sm:col-span-1" : ""
+            }`}
           >
-            <p className="text-xs font-medium uppercase tracking-wider text-ink/50">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-ink/50 sm:text-xs">
               {s.label}
             </p>
-            <p className="mt-2 font-heading text-4xl font-semibold text-forest">
+            <p className="mt-2 font-heading text-3xl font-semibold text-forest sm:text-4xl">
               {s.value.toLocaleString()}
             </p>
             <p className="mt-1 text-xs text-ink/45">{s.sub}</p>
@@ -205,17 +257,10 @@ export default async function DashboardPage() {
           <h2 className="text-lg font-semibold text-black">Quick Actions</h2>
           <div className="mt-4 space-y-2.5">
             <Link
-              href="/listings/new"
-              className="flex items-center justify-between rounded-xl bg-forest px-5 py-4 text-sm font-semibold text-cream transition-colors hover:bg-forest/90"
-            >
-              Start a 14-day campaign
-              <span aria-hidden>→</span>
-            </Link>
-            <Link
-              href="/quick-post"
+              href="/agents/new"
               className="flex items-center justify-between rounded-xl border border-forest/15 bg-white/60 px-5 py-4 text-sm font-medium text-ink transition-colors hover:border-forest/40"
             >
-              Make a quick post
+              Add a client agent
               <span aria-hidden className="text-ink/40">→</span>
             </Link>
             <Link

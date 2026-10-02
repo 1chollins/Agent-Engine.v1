@@ -34,6 +34,24 @@ function hexOr(value: string | null | undefined, fallback: string): string {
   return value && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
 }
 
+/**
+ * The agent's color, darkened just enough that white text on it (and it as
+ * text on white) stays readable — some agents' "primary" is a pale grey or
+ * cream. Dark colors pass through unchanged.
+ */
+function readable(hex: string): string {
+  let [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const lum = () =>
+    [r, g, b]
+      .map((v) => v / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+      .reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
+  for (let i = 0; i < 12 && lum() > 0.2; i++) {
+    [r, g, b] = [r, g, b].map((v) => v * 0.85);
+  }
+  return `#${[r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
+}
+
 export default async function SharedCampaignPage({ params }: PageProps) {
   const packageId = verifyShareToken(params.token);
   if (!packageId) notFound();
@@ -85,7 +103,7 @@ export default async function SharedCampaignPage({ params }: PageProps) {
     ? (await supabase.storage.from("brand-assets").createSignedUrl(brand.headshot_path, SIGNED_TTL)).data?.signedUrl
     : null;
 
-  const primary = hexOr(brand?.primary_color, "#3d4a2f");
+  const primary = readable(hexOr(brand?.primary_color, "#3d4a2f"));
   const counts = {
     reel: pieces.filter((p) => p.content_type === "reel").length,
     post: pieces.filter((p) => p.content_type === "post").length,

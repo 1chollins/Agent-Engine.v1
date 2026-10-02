@@ -70,9 +70,10 @@ export function ContentCalendar({ pieces, listingAddress }: ContentCalendarProps
                 {piece.asset_url && isComplete ? (
                   piece.asset_type === "video" ? (
                     <>
-                      {/* First frame of the rendered video as thumbnail */}
+                      {/* A frame 2s in as the thumbnail — the first frames are
+                          often a fade or a plain title card. */}
                       <video
-                        src={`${piece.asset_url}#t=0.1`}
+                        src={`${piece.asset_url}#t=2`}
                         preload="metadata"
                         muted
                         playsInline
@@ -125,10 +126,11 @@ export function ContentCalendar({ pieces, listingAddress }: ContentCalendarProps
                     <a
                       href={`/api/download?path=${encodeURIComponent(piece.asset_path)}&name=${encodeURIComponent(downloadFilename)}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="rounded p-0.5 text-gray-400 transition-colors hover:bg-sage/10 hover:text-sage-darker"
+                      className="-m-1.5 rounded-md p-1.5 text-gray-400 transition-colors hover:bg-sage/10 hover:text-sage-darker"
                       title="Download"
+                      aria-label={`Download day ${piece.day_number}`}
                     >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
                     </a>

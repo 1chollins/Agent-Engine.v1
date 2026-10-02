@@ -21,18 +21,19 @@ export function Header() {
 
   return (
     <header className="bg-forest">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link href="/dashboard" className="flex items-center gap-3">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
+        <Link href="/dashboard" className="flex shrink-0 items-center gap-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-tan font-heading text-base font-semibold text-cream">
             F&amp;F
           </span>
-          <span className="font-heading text-xl font-semibold tracking-tight text-cream">
+          <span className="whitespace-nowrap font-heading text-xl font-semibold tracking-tight text-cream">
             Listing Studio
           </span>
         </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 sm:flex">
+        {/* Desktop nav — full bar from 1024px; below that the menu button,
+            so laptops and tablets never wrap or scroll the header. */}
+        <nav className="hidden items-center gap-0.5 lg:flex">
           {NAV_LINKS.map((link) => {
             const isActive =
               pathname === link.href || pathname.startsWith(link.href + "/");
@@ -40,7 +41,7 @@ export function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`whitespace-nowrap rounded-md px-2.5 py-2 text-sm font-medium transition-colors xl:px-3 ${
                   isActive
                     ? "bg-cream/15 text-cream"
                     : "text-cream/70 hover:bg-cream/10 hover:text-cream"
@@ -52,11 +53,11 @@ export function Header() {
           })}
           <a
             href="https://www.frameandformstudio.com"
-            className="rounded-md px-3 py-2 text-sm font-medium text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream"
+            className="hidden whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-cream/70 transition-colors hover:bg-cream/10 hover:text-cream xl:inline-block"
           >
             Frame &amp; Form Studio ↗
           </a>
-          <div className="ml-2 border-l border-cream/20 pl-2">
+          <div className="ml-2 shrink-0 whitespace-nowrap border-l border-cream/20 pl-2">
             <LogoutButton />
           </div>
         </nav>
@@ -64,8 +65,9 @@ export function Header() {
         {/* Mobile hamburger */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="rounded-md p-2 text-cream/70 transition-colors hover:bg-cream/10 sm:hidden"
+          className="rounded-md p-2 text-cream/70 transition-colors hover:bg-cream/10 lg:hidden"
           aria-label="Toggle menu"
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? (
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,7 +83,7 @@ export function Header() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="border-t border-cream/15 bg-forest px-6 pb-4 sm:hidden">
+        <div className="border-t border-cream/15 bg-forest px-4 pb-4 sm:px-6 lg:hidden">
           <nav className="flex flex-col gap-1 pt-2">
             {NAV_LINKS.map((link) => {
               const isActive =
