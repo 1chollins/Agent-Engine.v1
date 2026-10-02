@@ -209,7 +209,8 @@ export async function runTextGeneration(
       failed++;
     } else {
       if (fields.status === "complete") succeeded++;
-      else failed++;
+      // Videos are still "pending" here (rendered next) — not failures.
+      else if (fields.status === "failed") failed++;
     }
   }
 

@@ -53,6 +53,22 @@ function lambdaFunctionName(): string {
   return speculateFunctionName(LAMBDA_CONFIG);
 }
 
+/**
+ * Encoding for every Lambda render. Remotion's h264 default is CRF 18 with no
+ * ceiling — fine for mostly-still slides, but once the whole frame moves
+ * (camera moves on full-frame photos) the bitrate balloons: a 30s Just Listed
+ * reel came out over 50 MB, past the generated-content bucket's 50 MB limit,
+ * so its upload failed, and a 23s story landed at 47.7 MB. Capped CRF keeps
+ * the quality target but holds peaks to 8 Mbps (YouTube's recommended 1080p30
+ * upload rate; Instagram and Facebook re-encode lower anyway). A 30s reel now
+ * tops out near 30 MB with no visible difference (SSIM 0.985 vs 0.989).
+ */
+const VIDEO_ENCODING = {
+  crf: 20,
+  encodingMaxRate: "8M",
+  encodingBufferSize: "16M",
+} as const;
+
 function getRegion(): AwsRegion {
   return (process.env.REMOTION_AWS_REGION as AwsRegion) ?? DEFAULT_REGION;
 }
@@ -213,6 +229,7 @@ async function startRender(
       composition: COMPOSITION_DEFS[templateKey].compositionId,
       inputProps,
       codec: "h264",
+      ...VIDEO_ENCODING,
       privacy: "public",
       // Chunk size tuned via env. Higher = fewer parallel lambdas.
       // Keep at 100 while the account Lambda concurrency quota is low
@@ -412,6 +429,7 @@ export async function startGenericRender(
     composition: compositionId,
     inputProps,
     codec: "h264",
+    ...VIDEO_ENCODING,
     privacy: "public",
     framesPerLambda: Number(process.env.REMOTION_FRAMES_PER_LAMBDA ?? 100),
   });

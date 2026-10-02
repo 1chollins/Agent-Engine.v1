@@ -323,9 +323,12 @@ export const generatePackage = inngest.createFunction(
               costUsd: renderCost,
             })
           );
-        } catch {
+        } catch (err) {
           await step.run(`fail-finalize-reel-${i + 1}`, async () =>
-            markPieceFailed(pieceId, "Reel finalize failed after step retries")
+            markPieceFailed(
+              pieceId,
+              `Reel finalize failed after step retries: ${describeError(err)}`
+            )
           );
         }
       } else {
@@ -409,9 +412,12 @@ export const generatePackage = inngest.createFunction(
               costUsd: renderCost,
             })
           );
-        } catch {
+        } catch (err) {
           await step.run(`fail-finalize-story-${i + 1}`, async () =>
-            markPieceFailed(pieceId, "Story finalize failed after step retries")
+            markPieceFailed(
+              pieceId,
+              `Story finalize failed after step retries: ${describeError(err)}`
+            )
           );
         }
       } else {
