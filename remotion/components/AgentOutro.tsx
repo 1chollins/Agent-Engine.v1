@@ -20,6 +20,8 @@ type AgentOutroProps = {
   email: string;
   headshotUrl: string;
   enterFrame: number;
+  /** Agent brand color for the headshot ring, rule and phone. */
+  accent?: string;
 };
 
 import { FONT_FAMILY } from "../lib/fonts";
@@ -33,6 +35,7 @@ export const AgentOutro: React.FC<AgentOutroProps> = ({
   email,
   headshotUrl,
   enterFrame,
+  accent,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -55,7 +58,7 @@ export const AgentOutro: React.FC<AgentOutroProps> = ({
             height: 280,
             borderRadius: "50%",
             objectFit: "cover",
-            border: "6px solid rgba(255,255,255,0.9)",
+            border: `6px solid ${accent ?? "rgba(255,255,255,0.9)"}`,
           }}
         />
       ),
@@ -67,6 +70,9 @@ export const AgentOutro: React.FC<AgentOutroProps> = ({
       node: (
         <div style={{ fontSize: 68, fontWeight: 700, color: "white" }}>
           {agentName}
+          {accent ? (
+            <div style={{ width: 120, height: 5, borderRadius: 3, background: accent, margin: "18px auto 0" }} />
+          ) : null}
         </div>
       ),
     });
@@ -85,7 +91,7 @@ export const AgentOutro: React.FC<AgentOutroProps> = ({
     items.push({
       key: "phone",
       node: (
-        <div style={{ fontSize: 42, fontWeight: 500, color: "white" }}>{phone}</div>
+        <div style={{ fontSize: 46, fontWeight: 700, color: accent ?? "white" }}>{phone}</div>
       ),
     });
   }

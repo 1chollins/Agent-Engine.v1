@@ -5,6 +5,9 @@
  * Spec parity: 4 photos, brand overlay, URL outro. 12s @ 9:16.
  * Timing: 360 frames @ 30fps. Four 99-frame slides, three 12-frame
  * seeded transitions (4×99 − 3×12 = 360).
+ *
+ * Each slide carries one of the reel's on-screen phrases, built word by
+ * word in the agent's brand color, with a whoosh on every cut.
  */
 import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
@@ -14,8 +17,11 @@ import { KenBurnsImage } from "../components/KenBurnsImage";
 import { TextOverlay } from "../components/TextOverlay";
 import { BrandBadge } from "../components/BrandBadge";
 import { BackgroundMusic } from "../components/BackgroundMusic";
+import { KineticCaption } from "../components/KineticCaption";
+import { CutSfx } from "../components/Sfx";
 import { pickTransition } from "../lib/transitions";
 import { textEnterFrameFor } from "../lib/seeded";
+import { highlightColor, phrasesForSlots, reelExtrasShape } from "../lib/brand";
 
 export const SHOWCASE_FPS = 30;
 export const SHOWCASE_DURATION_FRAMES = 360; // 12s
@@ -30,18 +36,19 @@ export const simpleShowcaseReelSchema = z.object({
   brandLogoUrl: z.string(),
   website: z.string().nullable(),
   seed: z.number(),
+  ...reelExtrasShape,
 });
 
 export type SimpleShowcaseReelProps = z.infer<typeof simpleShowcaseReelSchema>;
 
-export const SimpleShowcaseReel: React.FC<SimpleShowcaseReelProps> = ({
-  photoUrls,
-  brandName,
-  brandLogoUrl,
-  website,
-  seed,
-}) => {
+const slideStart = (i: number) => i * (SLIDE_FRAMES - TRANSITION_FRAMES);
+
+export const SimpleShowcaseReel: React.FC<SimpleShowcaseReelProps> = (props) => {
+  const { photoUrls, brandName, brandLogoUrl, website, seed } = props;
   const urlEnterOffset = textEnterFrameFor(seed, "url", 15, 35);
+  const highlight = highlightColor(props);
+  const phrases = phrasesForSlots(props.overlayPhrases, photoUrls.length);
+  const cuts = photoUrls.slice(1).map((_, i) => slideStart(i + 1) + TRANSITION_FRAMES / 2);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
@@ -67,7 +74,26 @@ export const SimpleShowcaseReel: React.FC<SimpleShowcaseReelProps> = ({
         ))}
       </TransitionSeries>
 
-      <BrandBadge brandName={brandName} logoUrl={brandLogoUrl} />
+      <BrandBadge brandName={brandName} logoUrl={brandLogoUrl} color={highlight} />
+
+      {phrases.map((phrase, i) =>
+        phrase ? (
+          <Sequence
+            key={`cap-${i}`}
+            from={slideStart(i) + (i === 0 ? 12 : TRANSITION_FRAMES)}
+            durationInFrames={SLIDE_FRAMES - TRANSITION_FRAMES - (i === 0 ? 12 : 6)}
+            layout="none"
+          >
+            <KineticCaption
+              text={phrase}
+              durationInFrames={SLIDE_FRAMES - TRANSITION_FRAMES - (i === 0 ? 12 : 6)}
+              highlight={highlight}
+            />
+          </Sequence>
+        ) : null
+      )}
+
+      {props.sfx !== false && <CutSfx cuts={cuts} />}
 
       {/* URL outro on the final slide */}
       <Sequence from={LAST_SLIDE_START} layout="none">

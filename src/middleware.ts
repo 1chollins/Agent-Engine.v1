@@ -9,6 +9,7 @@ const PUBLIC_ROUTES = [
   "/update-password",
   "/auth/confirm",
   "/p", // public property pages
+  "/share", // signed campaign links for agents
 ];
 
 function isPublicRoute(pathname: string): boolean {

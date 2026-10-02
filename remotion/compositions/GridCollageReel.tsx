@@ -24,6 +24,9 @@ import { BrandBadge } from "../components/BrandBadge";
 import { BackgroundMusic } from "../components/BackgroundMusic";
 import { pickTransition } from "../lib/transitions";
 import { textEnterFrameFor } from "../lib/seeded";
+import { KineticCaption } from "../components/KineticCaption";
+import { CutSfx } from "../components/Sfx";
+import { highlightColor, phrasesForSlots, reelExtrasShape } from "../lib/brand";
 
 export const GRID_COLLAGE_FPS = 30;
 export const GRID_COLLAGE_DURATION_FRAMES = 360; // 12s
@@ -37,6 +40,7 @@ export const gridCollageReelSchema = z.object({
   brandLogoUrl: z.string(),
   website: z.string().nullable(),
   seed: z.number(),
+  ...reelExtrasShape,
 });
 
 export type GridCollageReelProps = z.infer<typeof gridCollageReelSchema>;
@@ -98,14 +102,14 @@ const GridIntro: React.FC<{ photoUrls: string[]; seed: number }> = ({
   );
 };
 
-export const GridCollageReel: React.FC<GridCollageReelProps> = ({
-  photoUrls,
-  brandName,
-  brandLogoUrl,
-  website,
-  seed,
-}) => {
+const actStart = (i: number) => i * (ACT_FRAMES - TRANSITION_FRAMES);
+
+export const GridCollageReel: React.FC<GridCollageReelProps> = (props) => {
+  const { photoUrls, brandName, brandLogoUrl, website, seed } = props;
   const urlEnterOffset = textEnterFrameFor(seed, "url", 15, 35);
+  const highlight = highlightColor(props);
+  const phrases = phrasesForSlots(props.overlayPhrases, 4);
+  const cuts = [1, 2, 3].map((i) => actStart(i) + TRANSITION_FRAMES / 2);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
@@ -132,7 +136,27 @@ export const GridCollageReel: React.FC<GridCollageReelProps> = ({
         ))}
       </TransitionSeries>
 
-      <BrandBadge brandName={brandName} logoUrl={brandLogoUrl} />
+      <BrandBadge brandName={brandName} logoUrl={brandLogoUrl} color={highlight} />
+
+      {phrases.map((phrase, i) =>
+        phrase ? (
+          <Sequence
+            key={`cap-${i}`}
+            from={actStart(i) + (i === 0 ? 40 : TRANSITION_FRAMES)}
+            durationInFrames={ACT_FRAMES - TRANSITION_FRAMES - (i === 0 ? 40 : 6)}
+            layout="none"
+          >
+            <KineticCaption
+              text={phrase}
+              durationInFrames={ACT_FRAMES - TRANSITION_FRAMES - (i === 0 ? 40 : 6)}
+              highlight={highlight}
+              y={i === 0 ? 0.5 : 0.56}
+            />
+          </Sequence>
+        ) : null
+      )}
+
+      {props.sfx !== false && <CutSfx cuts={cuts} />}
 
       {/* URL outro on the final act */}
       <Sequence from={LAST_ACT_START} layout="none">

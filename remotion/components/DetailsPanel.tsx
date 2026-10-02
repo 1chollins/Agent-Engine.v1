@@ -15,11 +15,14 @@ import { FONT_FAMILY } from "../lib/fonts";
 type DetailsPanelProps = {
   lines: string[];
   enterFrame: number;
+  /** Agent brand color: top rule + the price line. */
+  accent?: string;
 };
 
 export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   lines,
   enterFrame,
+  accent,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -37,6 +40,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           borderRadius: 24,
           backgroundColor: "rgba(0,0,0,0.45)",
           alignItems: "center",
+          boxShadow: accent ? `inset 0 6px 0 ${accent}` : undefined,
         }}
       >
         {lines.map((line, i) => {
@@ -51,7 +55,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
               style={{
                 opacity: interpolate(driver, [0, 1], [0, 1]),
                 transform: `translateY(${interpolate(driver, [0, 1], [24, 0])}px)`,
-                color: "white",
+                color: accent && line.includes("$") ? accent : "white",
                 fontFamily: FONT_FAMILY,
                 fontSize: 52,
                 fontWeight: 600,

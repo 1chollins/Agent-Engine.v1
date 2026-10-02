@@ -23,6 +23,8 @@ export type CompositionTemplateKey =
   | "reel_grid_collage"
   | "reel_cinematic_pan"
   | "reel_beat_synced"
+  | "reel_editorial"
+  | "reel_cinematic_noir"
   | "story_triple_slide"
   | "story_zoom_reveal"
   | "story_four_scene"
@@ -35,6 +37,14 @@ export const REEL_VARIANT_KEYS: CompositionTemplateKey[] = [
   "reel_grid_collage",
   "reel_cinematic_pan",
   "reel_beat_synced",
+  "reel_editorial",
+  "reel_cinematic_noir",
+];
+
+/** The flagship styles (2026-10): every package gets both. */
+export const SIGNATURE_REEL_KEYS: CompositionTemplateKey[] = [
+  "reel_editorial",
+  "reel_cinematic_noir",
 ];
 
 export const STORY_VARIANT_KEYS: CompositionTemplateKey[] = [
@@ -58,6 +68,8 @@ export const COMPOSITION_DEFS: Record<CompositionTemplateKey, CompositionDef> = 
   reel_grid_collage: { compositionId: "GridCollageReel", photoCount: 4 },
   reel_cinematic_pan: { compositionId: "CinematicPanReel", photoCount: 4 },
   reel_beat_synced: { compositionId: "BeatSyncedShowcaseReel", photoCount: 4 },
+  reel_editorial: { compositionId: "EditorialCountdownReel", photoCount: 4 },
+  reel_cinematic_noir: { compositionId: "CinematicNoirReel", photoCount: 4 },
   story_triple_slide: { compositionId: "TripleSlideStory", photoCount: 3 },
   story_zoom_reveal: { compositionId: "ZoomRevealStory", photoCount: 3 },
   story_four_scene: { compositionId: "FourSceneStory", photoCount: 4 },
@@ -96,7 +108,51 @@ type InputPropsArgs = {
   brand: Record<string, unknown> | null;
   seed: number;
   supabase: ReturnType<typeof createServiceClient>;
+  /** content_pieces.text_overlay — JSON array of on-screen phrases. */
+  textOverlay?: string | null;
 };
+
+function parseOverlay(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((p): p is string => typeof p === "string" && p.trim().length > 0).slice(0, 6)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Agent colors + phrases shared by every reel. */
+function brandExtras(brand: Record<string, unknown> | null, textOverlay?: string | null) {
+  return {
+    primaryColor: (brand?.primary_color as string | null) ?? undefined,
+    secondaryColor: (brand?.secondary_color as string | null) ?? undefined,
+    accentColor: (brand?.accent_color as string | null) ?? null,
+    overlayPhrases: parseOverlay(textOverlay),
+  };
+}
+
+/** Listing facts for the editorial / cinematic styles. */
+function listingFacts(listing: Record<string, unknown>) {
+  const price = listing.price as number | null;
+  const beds = listing.bedrooms as number | null;
+  const baths = listing.bathrooms as number | null;
+  const sqft = listing.sqft as number | null;
+  const stats: string[] = [];
+  if (beds != null) stats.push(`${beds} ${beds === 1 ? "Bed" : "Beds"}`);
+  if (baths != null) stats.push(`${baths} ${baths === 1 ? "Bath" : "Baths"}`);
+  if (sqft) stats.push(`${sqft.toLocaleString("en-US")} Sq Ft`);
+  return {
+    address: (listing.address as string) ?? "",
+    cityLine: [listing.city, [listing.state, listing.zip_code].filter(Boolean).join(" ")]
+      .filter(Boolean)
+      .join(", "),
+    priceLabel: price ? `$${price.toLocaleString("en-US")}` : "",
+    stats,
+  };
+}
 
 /**
  * Builds the composition's inputProps from listing/brand data.
@@ -105,7 +161,7 @@ type InputPropsArgs = {
 export async function buildCompositionInputProps(
   args: InputPropsArgs
 ): Promise<Record<string, unknown>> {
-  const { templateKey, photoUrls, listing, brand, seed, supabase } = args;
+  const { templateKey, photoUrls, listing, brand, seed, supabase, textOverlay } = args;
 
   const expected = COMPOSITION_DEFS[templateKey].photoCount;
   if (photoUrls.length !== expected) {
@@ -148,6 +204,7 @@ export async function buildCompositionInputProps(
           brand?.headshot_path as string | null
         ),
         seed,
+        ...brandExtras(brand, textOverlay),
       };
       return props;
     }
@@ -156,7 +213,9 @@ export async function buildCompositionInputProps(
     case "reel_split_showcase":
     case "reel_grid_collage":
     case "reel_cinematic_pan":
-    case "reel_beat_synced": {
+    case "reel_beat_synced":
+    case "reel_editorial":
+    case "reel_cinematic_noir": {
       const props: SimpleShowcaseReelProps = {
         photoUrls,
         brandName: (brand?.brokerage_name as string) ?? "",
@@ -166,6 +225,14 @@ export async function buildCompositionInputProps(
         ),
         website: (brand?.website as string | null) ?? null,
         seed,
+        ...brandExtras(brand, textOverlay),
+        agentName: (brand?.agent_name as string) ?? "",
+        phone: (brand?.phone as string) ?? "",
+        agentHeadshotUrl: await getBrandAssetUrl(
+          supabase,
+          brand?.headshot_path as string | null
+        ),
+        ...listingFacts(listing),
       };
       return props;
     }

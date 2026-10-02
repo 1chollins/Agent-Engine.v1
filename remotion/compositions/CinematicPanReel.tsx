@@ -17,6 +17,9 @@ import { KenBurnsImage } from "../components/KenBurnsImage";
 import { TextOverlay } from "../components/TextOverlay";
 import { BackgroundMusic } from "../components/BackgroundMusic";
 import { textEnterFrameFor } from "../lib/seeded";
+import { KineticCaption } from "../components/KineticCaption";
+import { CutSfx } from "../components/Sfx";
+import { highlightColor, phrasesForSlots, reelExtrasShape } from "../lib/brand";
 
 export const CINEMATIC_PAN_FPS = 30;
 export const CINEMATIC_PAN_DURATION_FRAMES = 360; // 12s
@@ -31,6 +34,7 @@ export const cinematicPanReelSchema = z.object({
   brandLogoUrl: z.string(),
   website: z.string().nullable(),
   seed: z.number(),
+  ...reelExtrasShape,
 });
 
 export type CinematicPanReelProps = z.infer<typeof cinematicPanReelSchema>;
@@ -58,13 +62,14 @@ const LetterboxBars: React.FC = () => {
   );
 };
 
-export const CinematicPanReel: React.FC<CinematicPanReelProps> = ({
-  photoUrls,
-  brandName,
-  website,
-  seed,
-}) => {
+const slideStart = (i: number) => i * (SLIDE_FRAMES - TRANSITION_FRAMES);
+
+export const CinematicPanReel: React.FC<CinematicPanReelProps> = (props) => {
+  const { photoUrls, brandName, website, seed } = props;
   const frame = useCurrentFrame();
+  const highlight = highlightColor(props);
+  const phrases = phrasesForSlots(props.overlayPhrases, photoUrls.length);
+  const cuts = photoUrls.slice(1).map((_, i) => slideStart(i + 1) + TRANSITION_FRAMES / 2);
   const urlEnterOffset = textEnterFrameFor(seed, "url", 15, 35);
   const titleOpacity = interpolate(frame, [25, 55], [0, 1], {
     extrapolateLeft: "clamp",
@@ -97,6 +102,29 @@ export const CinematicPanReel: React.FC<CinematicPanReelProps> = ({
       </TransitionSeries>
 
       <LetterboxBars />
+
+      {phrases.map((phrase, i) =>
+        phrase ? (
+          <Sequence
+            key={`cap-${i}`}
+            from={slideStart(i) + (i === 0 ? 40 : TRANSITION_FRAMES + 4)}
+            durationInFrames={SLIDE_FRAMES - TRANSITION_FRAMES - (i === 0 ? 40 : 10)}
+            layout="none"
+          >
+            <div style={{ position: "absolute", inset: 0, zIndex: 11 }}>
+              <KineticCaption
+                text={phrase}
+                durationInFrames={SLIDE_FRAMES - TRANSITION_FRAMES - (i === 0 ? 40 : 10)}
+                highlight={highlight}
+                variant="rise"
+                y={0.6}
+              />
+            </div>
+          </Sequence>
+        ) : null
+      )}
+
+      {props.sfx !== false && <CutSfx cuts={cuts} soft />}
 
       {/* Brand name held in small caps just below the top bar */}
       {brandName ? (

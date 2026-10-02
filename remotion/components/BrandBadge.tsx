@@ -14,11 +14,14 @@ import { FONT_FAMILY } from "../lib/fonts";
 type BrandBadgeProps = {
   brandName: string;
   logoUrl: string;
+  /** Agent brand color, shown as an accent bar on the pill. */
+  color?: string;
 };
 
 export const BrandBadge: React.FC<BrandBadgeProps> = ({
   brandName,
   logoUrl,
+  color,
 }) => {
   const frame = useCurrentFrame();
   const opacity = interpolate(frame, [0, 20], [0, 1], {
@@ -43,6 +46,7 @@ export const BrandBadge: React.FC<BrandBadgeProps> = ({
           padding: "20px 40px",
           borderRadius: 999,
           backgroundColor: "rgba(0,0,0,0.35)",
+          boxShadow: color ? `inset 6px 0 0 ${color}` : undefined,
         }}
       >
         {logoUrl ? (

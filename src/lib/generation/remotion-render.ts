@@ -19,7 +19,8 @@
  * different memory/disk/timeout, update LAMBDA_CONFIG to match.
  *
  * Generative motion (Kling) is intentionally NOT supported here —
- * permanent architectural decision; Ken Burns on real photos only.
+ * permanent architectural decision; camera moves on real photos only
+ * (see remotion/components/KenBurnsImage.tsx).
  */
 import {
   renderMediaOnLambda,
@@ -190,6 +191,7 @@ async function startRender(
         seedFromPieceId(typedPiece.id) +
         ((typedPiece as { regen_count?: number }).regen_count ?? 0) * 7919,
       supabase,
+      textOverlay: typedPiece.text_overlay,
     });
 
     // Free-tier watermark: a listing renders clean only once it has a

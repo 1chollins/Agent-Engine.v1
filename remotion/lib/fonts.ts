@@ -12,6 +12,9 @@ import { continueRender, delayRender, staticFile } from "remotion";
 export const FONT_FAMILY =
   'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
+/** Editorial serif for the editorial / cinematic reel styles (OFL). */
+export const SERIF_FAMILY = '"Cormorant Garamond", Georgia, "Times New Roman", serif';
+
 let started = false;
 
 export function loadInterFonts(): void {
@@ -32,6 +35,11 @@ export function loadInterFonts(): void {
       "Inter",
       `url('${staticFile("fonts/Inter-Bold.ttf")}') format('truetype')`,
       { weight: "700" }
+    ).load(),
+    new FontFace(
+      "Cormorant Garamond",
+      `url('${staticFile("fonts/CormorantGaramond.ttf")}') format('truetype')`,
+      { weight: "300 700" }
     ).load(),
   ])
     .then((fonts) => {

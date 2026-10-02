@@ -35,6 +35,9 @@ import { BackgroundMusic } from "../components/BackgroundMusic";
 import { pickTrackFor, beatFramesFor } from "../lib/music";
 import { EDIT_STYLES, pickEditStyleFor, type EditStyle } from "../lib/editStyles";
 import { textEnterFrameFor } from "../lib/seeded";
+import { KineticCaption } from "../components/KineticCaption";
+import { CutSfx } from "../components/Sfx";
+import { highlightColor, phrasesForSlots, reelExtrasShape } from "../lib/brand";
 
 export const BEAT_SYNCED_FPS = 30;
 export const BEAT_SYNCED_DURATION_FRAMES = 360; // 12s
@@ -53,6 +56,7 @@ export const beatSyncedShowcaseReelSchema = z.object({
   styleOverride: z
     .enum(["punchy", "whip", "vibe", "luxe", "soft", "hyper", "retro", "bounce"])
     .optional(),
+  ...reelExtrasShape,
 });
 
 export type BeatSyncedShowcaseReelProps = z.infer<
@@ -79,14 +83,13 @@ function buildSegments(
   return starts;
 }
 
-export const BeatSyncedShowcaseReel: React.FC<BeatSyncedShowcaseReelProps> = ({
-  photoUrls,
-  brandName,
-  brandLogoUrl,
-  website,
-  seed,
-  styleOverride,
-}) => {
+/** Caption windows: four equal beats of the 12s edit. */
+const CAPTION_WINDOW = 90;
+
+export const BeatSyncedShowcaseReel: React.FC<BeatSyncedShowcaseReelProps> = (props) => {
+  const { photoUrls, brandName, brandLogoUrl, website, seed, styleOverride } = props;
+  const highlight = highlightColor(props);
+  const phrases = phrasesForSlots(props.overlayPhrases, 4);
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
 
@@ -164,7 +167,29 @@ export const BeatSyncedShowcaseReel: React.FC<BeatSyncedShowcaseReelProps> = ({
             </Sequence>
           ))}
 
-      <BrandBadge brandName={brandName} logoUrl={brandLogoUrl} />
+      <BrandBadge brandName={brandName} logoUrl={brandLogoUrl} color={highlight} />
+
+      {phrases.map((phrase, i) =>
+        phrase ? (
+          <Sequence
+            key={`cap-${i}`}
+            from={i * CAPTION_WINDOW + (i === 0 ? 6 : 2)}
+            durationInFrames={CAPTION_WINDOW - (i === 0 ? 10 : 6)}
+            layout="none"
+          >
+            <KineticCaption
+              text={phrase}
+              durationInFrames={CAPTION_WINDOW - (i === 0 ? 10 : 6)}
+              highlight={highlight}
+              stagger={2}
+            />
+          </Sequence>
+        ) : null
+      )}
+
+      {props.sfx !== false && (
+        <CutSfx cuts={starts.slice(1)} minGapFrames={26} volume={0.34} />
+      )}
 
       {/* URL outro on the final segment */}
       <Sequence from={lastStart} layout="none">

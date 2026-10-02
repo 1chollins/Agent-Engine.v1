@@ -68,6 +68,18 @@ import {
   SPLIT_REVEAL_FPS,
 } from "./compositions/SplitRevealStory";
 import {
+  EditorialCountdownReel,
+  editorialCountdownReelSchema,
+  EDITORIAL_DURATION_FRAMES,
+  EDITORIAL_FPS,
+} from "./compositions/EditorialCountdownReel";
+import {
+  CinematicNoirReel,
+  cinematicNoirReelSchema,
+  CINEMATIC_NOIR_DURATION_FRAMES,
+  CINEMATIC_NOIR_FPS,
+} from "./compositions/CinematicNoirReel";
+import {
   AnimatedQuickPost,
   animatedQuickPostSchema,
   ANIMATED_QUICK_POST_DURATION_FRAMES,
@@ -94,6 +106,30 @@ const PLACEHOLDER_PHOTOS = [
 
 const W = 1080;
 const H = 1920;
+
+/** Studio preview props for the branded reel styles. */
+const PREVIEW_REEL_PROPS = {
+  photoUrls: PLACEHOLDER_PHOTOS.slice(0, 4),
+  brandName: "Gulf Coast Realty",
+  brandLogoUrl: "",
+  website: "frameandformstudio.com",
+  primaryColor: "#1F4E79",
+  secondaryColor: "#F2F2F2",
+  accentColor: "#D4A017",
+  overlayPhrases: [
+    "Chef's Kitchen with Quartz Island",
+    "Heated Pool Under a Screened Lanai",
+    "4 Beds • 3 Baths • $785,000",
+    "Call Jane Rivera Today",
+  ],
+  agentName: "Jane Rivera",
+  phone: "(239) 555-0142",
+  agentHeadshotUrl: "",
+  address: "4568 San Antonio Ln",
+  cityLine: "Bonita Springs, FL 34134",
+  priceLabel: "$785,000",
+  stats: ["4 Beds", "3 Baths", "2,800 Sq Ft"],
+};
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -282,6 +318,26 @@ export const RemotionRoot: React.FC = () => {
           website: "frameandformstudio.com",
           seed: 42,
         }}
+      />
+      <Composition
+        id="EditorialCountdownReel"
+        component={EditorialCountdownReel}
+        schema={editorialCountdownReelSchema}
+        width={W}
+        height={H}
+        fps={EDITORIAL_FPS}
+        durationInFrames={EDITORIAL_DURATION_FRAMES}
+        defaultProps={{ ...PREVIEW_REEL_PROPS, seed: 42 }}
+      />
+      <Composition
+        id="CinematicNoirReel"
+        component={CinematicNoirReel}
+        schema={cinematicNoirReelSchema}
+        width={W}
+        height={H}
+        fps={CINEMATIC_NOIR_FPS}
+        durationInFrames={CINEMATIC_NOIR_DURATION_FRAMES}
+        defaultProps={{ ...PREVIEW_REEL_PROPS, seed: 42 }}
       />
       <Composition
         id="JustListedReel"

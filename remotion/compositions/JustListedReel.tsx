@@ -10,6 +10,11 @@
  * Narrative: hero label + address over photo 1 → stats panel 1 over
  * photo 2 → stats panel 2 over photo 3 → clean breather on photo 4 →
  * agent outro card over photo 5.
+ *
+ * Brand pass: "Just Listed" builds word by word in the agent's color with
+ * a low impact hit, stat panels and the outro wear the same color, the
+ * breather slide carries one of the reel's phrases, and each cut gets a
+ * whoosh; a chime marks the agent card.
  */
 import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
@@ -22,6 +27,9 @@ import { AgentOutro } from "../components/AgentOutro";
 import { BackgroundMusic } from "../components/BackgroundMusic";
 import { pickTransition } from "../lib/transitions";
 import { textEnterFrameFor } from "../lib/seeded";
+import { KineticCaption } from "../components/KineticCaption";
+import { CutSfx, SfxAt } from "../components/Sfx";
+import { highlightColor, reelExtrasShape } from "../lib/brand";
 
 export const JUST_LISTED_FPS = 30;
 export const JUST_LISTED_DURATION_FRAMES = 900; // 30s
@@ -44,25 +52,36 @@ export const justListedReelSchema = z.object({
   email: z.string(),
   agentHeadshotUrl: z.string(),
   seed: z.number(),
+  primaryColor: reelExtrasShape.primaryColor,
+  secondaryColor: reelExtrasShape.secondaryColor,
+  accentColor: reelExtrasShape.accentColor,
+  overlayPhrases: reelExtrasShape.overlayPhrases,
+  sfx: reelExtrasShape.sfx,
 });
 
 export type JustListedReelProps = z.infer<typeof justListedReelSchema>;
 
-export const JustListedReel: React.FC<JustListedReelProps> = ({
-  heroLabel,
-  addressLine1,
-  addressLine2,
-  details1,
-  details2,
-  photoUrls,
-  agentName,
-  brandName,
-  phone,
-  email,
-  agentHeadshotUrl,
-  seed,
-}) => {
+export const JustListedReel: React.FC<JustListedReelProps> = (props) => {
+  const {
+    heroLabel,
+    addressLine1,
+    addressLine2,
+    details1,
+    details2,
+    photoUrls,
+    agentName,
+    brandName,
+    phone,
+    email,
+    agentHeadshotUrl,
+    seed,
+  } = props;
   const heroEnter = textEnterFrameFor(seed, "hero", 12, 30);
+  const highlight = highlightColor(props);
+  // The breather slide gets a descriptive phrase (stats already have panels).
+  const breatherPhrase =
+    (props.overlayPhrases ?? []).find((p) => p.trim() && !/[0-9$]/.test(p)) ?? null;
+  const cuts = [1, 2, 3, 4].map((n) => slideStart(n) + Math.round(TRANSITION_FRAMES / 2));
 
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
@@ -90,12 +109,15 @@ export const JustListedReel: React.FC<JustListedReelProps> = ({
 
       {/* Slide 1: hero label + address */}
       <Sequence durationInFrames={slideStart(1) + TRANSITION_FRAMES} layout="none">
-        <TextOverlay
-          text={heroLabel}
-          enterFrame={heroEnter}
-          position="center"
-          fontSize={110}
-        />
+        <Sequence from={heroEnter} durationInFrames={slideStart(1) + TRANSITION_FRAMES - heroEnter} layout="none">
+          <KineticCaption
+            text={heroLabel}
+            durationInFrames={slideStart(1) + TRANSITION_FRAMES - heroEnter}
+            highlight={highlight}
+            y={0.44}
+            stagger={5}
+          />
+        </Sequence>
         <TextOverlay
           text={`${addressLine1}, ${addressLine2}`}
           enterFrame={heroEnter + 12}
@@ -113,6 +135,7 @@ export const JustListedReel: React.FC<JustListedReelProps> = ({
         <DetailsPanel
           lines={details1}
           enterFrame={textEnterFrameFor(seed, "details1", 18, 40)}
+          accent={highlight}
         />
       </Sequence>
 
@@ -125,10 +148,24 @@ export const JustListedReel: React.FC<JustListedReelProps> = ({
         <DetailsPanel
           lines={details2}
           enterFrame={textEnterFrameFor(seed, "details2", 18, 40)}
+          accent={highlight}
         />
       </Sequence>
 
-      {/* Slide 4 is a clean breather — no overlay. */}
+      {/* Slide 4: breather with one descriptive phrase */}
+      {breatherPhrase ? (
+        <Sequence
+          from={slideStart(3) + TRANSITION_FRAMES + 10}
+          durationInFrames={SLIDE_FRAMES - TRANSITION_FRAMES * 2 - 10}
+          layout="none"
+        >
+          <KineticCaption
+            text={breatherPhrase}
+            durationInFrames={SLIDE_FRAMES - TRANSITION_FRAMES * 2 - 10}
+            highlight={highlight}
+          />
+        </Sequence>
+      ) : null}
 
       {/* Slide 5: agent outro */}
       <Sequence from={slideStart(4)} layout="none">
@@ -139,8 +176,17 @@ export const JustListedReel: React.FC<JustListedReelProps> = ({
           email={email}
           headshotUrl={agentHeadshotUrl}
           enterFrame={20}
+          accent={highlight}
         />
       </Sequence>
+
+      {props.sfx !== false && (
+        <>
+          <SfxAt name="impact" at={heroEnter + 4} volume={0.45} />
+          <CutSfx cuts={cuts} volume={0.32} />
+          <SfxAt name="chime" at={slideStart(4) + 22} volume={0.3} />
+        </>
+      )}
     </AbsoluteFill>
   );
 };

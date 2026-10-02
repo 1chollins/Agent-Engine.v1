@@ -1,6 +1,7 @@
 import {
   COMPOSITION_DEFS,
   REEL_VARIANT_KEYS,
+  SIGNATURE_REEL_KEYS,
   STORY_VARIANT_KEYS,
   hashString,
 } from "./composition-map";
@@ -45,8 +46,9 @@ function seededShuffle<T>(items: readonly T[], seed: number): T[] {
  *
  * Day 2 always gets the Just Listed hero reel (the grand reveal). The
  * beat-synced "AutoCut" flagship ships in every package but lands on a
- * random remaining reel day; the other reel days draw from a shuffle of
- * the classic variants. Story days draw from a shuffle of story variants.
+ * random remaining reel day. The other three reel days get both signature
+ * styles (editorial countdown + cinematic noir) plus one classic variant,
+ * in a seeded order. Story days draw from a shuffle of story variants.
  */
 export function selectTemplate(params: {
   contentType: "reel" | "story";
@@ -65,10 +67,13 @@ export function selectTemplate(params: {
     // Beat-synced claims one seeded slot among the later reel days.
     const beatDay = laterDays[seed % laterDays.length];
     if (dayNumber === beatDay) return "reel_beat_synced";
-    const rotation = seededShuffle(
-      REEL_VARIANT_KEYS.filter((k) => k !== "reel_beat_synced"),
+    const classics = seededShuffle(
+      REEL_VARIANT_KEYS.filter(
+        (k) => k !== "reel_beat_synced" && !SIGNATURE_REEL_KEYS.includes(k)
+      ),
       seed
     );
+    const rotation = seededShuffle([...SIGNATURE_REEL_KEYS, classics[0]], seed ^ 0x5bd1e995);
     const slot = laterDays.filter((d) => d !== beatDay).indexOf(dayNumber);
     return rotation[slot % rotation.length];
   }

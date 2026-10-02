@@ -15,7 +15,7 @@ import {
   staticFile,
   useVideoConfig,
 } from "remotion";
-import { pickTrackFor } from "../lib/music";
+import { pickTrackFor, pickTrackForMood, type MusicMood } from "../lib/music";
 import { Watermark } from "./Watermark";
 
 const FADE_IN_FRAMES = 30; // 1s
@@ -24,11 +24,14 @@ const BASE_VOLUME = 0.7;
 
 type BackgroundMusicProps = {
   seed: number;
+  /** Restrict the seeded pick to one mood (falls back to the whole library). */
+  mood?: MusicMood;
+  volume?: number;
 };
 
-export const BackgroundMusic: React.FC<BackgroundMusicProps> = ({ seed }) => {
+export const BackgroundMusic: React.FC<BackgroundMusicProps> = ({ seed, mood, volume = BASE_VOLUME }) => {
   const { durationInFrames } = useVideoConfig();
-  const track = pickTrackFor(seed);
+  const track = mood ? pickTrackForMood(seed, mood) : pickTrackFor(seed);
 
   return (
     <>
@@ -45,7 +48,7 @@ export const BackgroundMusic: React.FC<BackgroundMusicProps> = ({ seed }) => {
                 durationInFrames - FADE_OUT_FRAMES,
                 durationInFrames,
               ],
-              [0, BASE_VOLUME, BASE_VOLUME, 0],
+              [0, volume, volume, 0],
               { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
             )
           }

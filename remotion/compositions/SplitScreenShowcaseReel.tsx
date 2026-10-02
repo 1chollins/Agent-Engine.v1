@@ -16,6 +16,9 @@ import { BrandBadge } from "../components/BrandBadge";
 import { BackgroundMusic } from "../components/BackgroundMusic";
 import { pickTransition } from "../lib/transitions";
 import { textEnterFrameFor } from "../lib/seeded";
+import { KineticCaption } from "../components/KineticCaption";
+import { CutSfx } from "../components/Sfx";
+import { highlightColor, phrasesForSlots } from "../lib/brand";
 import { simpleShowcaseReelSchema } from "./SimpleShowcaseReel";
 import type { SimpleShowcaseReelProps } from "./SimpleShowcaseReel";
 
@@ -68,14 +71,13 @@ const SplitPair: React.FC<{
   );
 };
 
-export const SplitScreenShowcaseReel: React.FC<SimpleShowcaseReelProps> = ({
-  photoUrls,
-  brandName,
-  brandLogoUrl,
-  website,
-  seed,
-}) => {
+export const SplitScreenShowcaseReel: React.FC<SimpleShowcaseReelProps> = (props) => {
+  const { photoUrls, brandName, brandLogoUrl, website, seed } = props;
   const urlEnterOffset = textEnterFrameFor(seed, "split-url", 15, 35);
+  const highlight = highlightColor(props);
+  const phrases = phrasesForSlots(props.overlayPhrases, 3);
+  const sceneStarts = [0, SPLIT_SCENE_FRAMES - TRANSITION_FRAMES, CLOSER_START];
+  const sceneLens = [SPLIT_SCENE_FRAMES, SPLIT_SCENE_FRAMES, CLOSER_FRAMES];
 
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
@@ -119,7 +121,29 @@ export const SplitScreenShowcaseReel: React.FC<SimpleShowcaseReelProps> = ({
         </TransitionSeries.Sequence>
       </TransitionSeries>
 
-      <BrandBadge brandName={brandName} logoUrl={brandLogoUrl} />
+      <BrandBadge brandName={brandName} logoUrl={brandLogoUrl} color={highlight} />
+
+      {phrases.map((phrase, i) =>
+        phrase ? (
+          <Sequence
+            key={`cap-${i}`}
+            from={sceneStarts[i] + (i === 0 ? 14 : TRANSITION_FRAMES)}
+            durationInFrames={sceneLens[i] - TRANSITION_FRAMES - (i === 0 ? 14 : 6)}
+            layout="none"
+          >
+            <KineticCaption
+              text={phrase}
+              durationInFrames={sceneLens[i] - TRANSITION_FRAMES - (i === 0 ? 14 : 6)}
+              highlight={highlight}
+              y={0.5}
+            />
+          </Sequence>
+        ) : null
+      )}
+
+      {props.sfx !== false && (
+        <CutSfx cuts={[sceneStarts[1] + TRANSITION_FRAMES / 2, CLOSER_START + TRANSITION_FRAMES / 2]} />
+      )}
 
       <Sequence from={CLOSER_START} layout="none">
         <TextOverlay

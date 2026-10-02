@@ -6,6 +6,7 @@ import { ListingSelector } from "@/components/content/listing-selector";
 import { UnlockButton } from "@/components/listing/unlock-button";
 import { ShareLink } from "@/components/property/share-link";
 import { ensurePropertyPage } from "@/lib/property-page";
+import { shareUrlFor } from "@/lib/share-token";
 import type { ContentPackage, ContentPiece } from "@/types/content";
 
 type ContentPageProps = {
@@ -173,6 +174,23 @@ export default async function ListingContentPage({ params }: ContentPageProps) {
             </p>
           </div>
           <UnlockButton listingId={params.id} />
+        </div>
+      )}
+
+      {/* Agent share link — everything they need in one place */}
+      {isDownloadable && (
+        <div className="mb-6 rounded-2xl border border-forest/25 bg-forest/5 p-5">
+          <p className="font-heading text-base font-semibold text-ink">Send this campaign to the agent</p>
+          <p className="mb-3 mt-1 text-sm text-ink/65">
+            One link with all 14 pieces, captions they can copy with a tap, the day to post each one,
+            and a download-all button. No login needed.
+            {isWatermarked && (
+              <span className="mt-1 block font-medium text-red-700">
+                This campaign still has the watermark. Remove it (promo code at checkout) before you send the link.
+              </span>
+            )}
+          </p>
+          <ShareLink url={shareUrlFor(typedPkg.id)} />
         </div>
       )}
 
