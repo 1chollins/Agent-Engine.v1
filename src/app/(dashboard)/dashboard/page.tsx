@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Listing, ListingStatus, ListingPhoto } from "@/types/listing";
+import { priceLabel } from "@/lib/audience";
 
 const STATUS_STYLES: Record<ListingStatus, { bg: string; text: string; label: string }> = {
   draft: { bg: "bg-gray-100", text: "text-gray-700", label: "Draft" },
@@ -72,6 +73,12 @@ export default async function DashboardPage() {
       .limit(4),
     supabase.from("brand_profiles").select("agent_name").eq("user_id", user.id).eq("is_primary", true).maybeSingle(),
   ]);
+  const { data: hostRows } = await supabase
+    .from("brand_profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("profile_type", "host");
+  const hostProfiles = new Set((hostRows ?? []).map((r: { id: string }) => r.id));
 
   const typedListings = (listings ?? []) as Listing[];
   const inFlight = typedListings.filter((l) => l.status === "processing").length;
@@ -236,7 +243,12 @@ export default async function DashboardPage() {
                         {listing.address}
                       </p>
                       <p className="truncate text-xs text-gray-500">
-                        {listing.city}, {listing.state} · ${listing.price.toLocaleString()}
+                        {[
+                          `${listing.city}, ${listing.state}`,
+                          priceLabel(listing.price, hostProfiles.has(listing.brand_profile_id) ? "host" : "agent"),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </p>
                     </div>
                     <span className="hidden text-xs text-gray-400 sm:block">
@@ -260,7 +272,7 @@ export default async function DashboardPage() {
               href="/agents/new"
               className="flex items-center justify-between rounded-xl border border-forest/15 bg-white/60 px-5 py-4 text-sm font-medium text-ink transition-colors hover:border-forest/40"
             >
-              Add a client agent
+              Add a client
               <span aria-hidden className="text-ink/40">→</span>
             </Link>
             <Link

@@ -80,6 +80,8 @@ export type PropertyPageData = {
     | "email"
     | "primary_color"
     | "secondary_color"
+    | "profile_type"
+    | "booking_url"
   > & { headshotUrl: string | null; logoUrl: string | null };
   photos: { url: string; isHero: boolean }[];
   /** Signed URL of the hero reel video, if one completed. */
@@ -180,6 +182,8 @@ export async function getPropertyPageData(slug: string): Promise<PropertyPageDat
       email: typedBrand.email,
       primary_color: typedBrand.primary_color,
       secondary_color: typedBrand.secondary_color,
+      profile_type: typedBrand.profile_type ?? "agent",
+      booking_url: typedBrand.booking_url ?? null,
       headshotUrl: headshotSigned.data?.signedUrl ?? null,
       logoUrl: logoSigned.data?.signedUrl ?? null,
     },

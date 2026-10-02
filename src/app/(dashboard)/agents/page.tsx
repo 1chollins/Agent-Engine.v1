@@ -29,7 +29,7 @@ export default async function AgentsPage() {
     if (l.brand_profile_id) campaigns.set(l.brand_profile_id, (campaigns.get(l.brand_profile_id) ?? 0) + 1);
   }
 
-  const paths = typed.map((p) => p.headshot_path).filter(Boolean);
+  const paths = typed.map((p) => p.headshot_path).filter((p): p is string => Boolean(p));
   const headshots = new Map<string, string>();
   if (paths.length > 0) {
     const { data: signed } = await supabase.storage.from("brand-assets").createSignedUrls(paths, 3600);
@@ -40,26 +40,27 @@ export default async function AgentsPage() {
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-black sm:text-3xl">Agents</h1>
+          <h1 className="text-2xl font-bold text-black sm:text-3xl">Clients</h1>
           <p className="mt-1 max-w-xl text-gray-600">
-            Each client agent&apos;s headshot, logo, colors and brokerage. Pick the agent when you
-            start a campaign and every post, reel and story carries their branding.
+            The realtors and Airbnb hosts you make campaigns for: name, contact, and any photo,
+            logo or colors. Pick the client when you start a campaign. Realtor campaigns sell the
+            home; host campaigns fill the calendar.
           </p>
         </div>
         <Link
           href="/agents/new"
           className="shrink-0 rounded-lg bg-forest px-5 py-2.5 text-center text-sm font-semibold text-cream shadow-sm transition-colors hover:bg-forest/90"
         >
-          Add Agent
+          Add client
         </Link>
       </div>
 
       <div className="mt-6 space-y-3">
         {agents.length === 0 && (
           <div className="rounded-xl border border-dashed border-forest/25 bg-white/50 p-8 text-center">
-            <p className="font-medium text-gray-500">No client agents yet</p>
+            <p className="font-medium text-gray-500">No clients yet</p>
             <p className="mt-1 text-sm text-gray-400">
-              Add one per agent you shoot for. Their repeat listings reuse it.
+              Add one per realtor or host you work with. Their repeat campaigns reuse it.
             </p>
           </div>
         )}
@@ -69,7 +70,7 @@ export default async function AgentsPage() {
             key={a.id}
             profile={a}
             href={`/agents/${a.id}`}
-            headshot={headshots.get(a.headshot_path)}
+            headshot={a.headshot_path ? headshots.get(a.headshot_path) : undefined}
             campaigns={campaigns.get(a.id) ?? 0}
           />
         ))}
@@ -82,7 +83,7 @@ export default async function AgentsPage() {
             <AgentRow
               profile={account}
               href="/settings/brand"
-              headshot={headshots.get(account.headshot_path)}
+              headshot={account.headshot_path ? headshots.get(account.headshot_path) : undefined}
               campaigns={campaigns.get(account.id) ?? 0}
               note="Used when a campaign has no client agent"
             />
@@ -118,7 +119,16 @@ function AgentRow({
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-black">{profile.agent_name}</p>
+        <p className="flex min-w-0 items-center gap-2">
+          <span className="truncate font-medium text-black">{profile.agent_name}</span>
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+              profile.profile_type === "host" ? "bg-tan/20 text-ink/80" : "bg-forest/10 text-forest"
+            }`}
+          >
+            {profile.profile_type === "host" ? "Airbnb host" : "Realtor"}
+          </span>
+        </p>
         <p className="mt-0.5 truncate text-sm text-gray-500">
           {[profile.agent_title, profile.brokerage_name].filter(Boolean).join(" · ")}
         </p>

@@ -36,7 +36,7 @@ export type PropertyClass =
   | "commercial"
   | "land";
 
-export function getPropertyClass(type: PropertyType): PropertyClass {
+export function getPropertyClass(type: PropertyType | null | undefined): PropertyClass {
   switch (type) {
     case "multi_family":
       return "multifamily";
@@ -67,14 +67,18 @@ export type Listing = {
   city: string;
   state: string;
   zip_code: string;
-  property_type: PropertyType;
+  /** Optional since 2026-10 (only the address is required). */
+  property_type: PropertyType | null;
   bedrooms: number | null;
   bathrooms: number | null;
-  sqft: number;
+  sqft: number | null;
   lot_size: string | null;
-  price: number;
+  /** Sale price for realtor listings; nightly rate for host listings. */
+  price: number | null;
   year_built: number | null;
-  features: string;
+  features: string | null;
+  /** Host listings: how many guests it sleeps. */
+  max_guests: number | null;
   neighborhood: string | null;
   hoa_info: string | null;
   additional_notes: string | null;

@@ -6,6 +6,7 @@ import { verifyShareToken } from "@/lib/share-token";
 import { CopyButton } from "@/components/content/copy-button";
 import type { ContentPiece } from "@/types/content";
 import type { Listing } from "@/types/listing";
+import { audienceOf } from "@/lib/audience";
 
 /**
  * The page an agent gets: their 14-day campaign with every piece, its
@@ -16,7 +17,7 @@ import type { Listing } from "@/types/listing";
 export const revalidate = 0; // signed URLs must be fresh
 
 export const metadata: Metadata = {
-  title: "Your listing campaign · Listing Studio",
+  title: "Your social campaign · Listing Studio",
   robots: { index: false, follow: false },
 };
 
@@ -68,6 +69,7 @@ export default async function SharedCampaignPage({ params }: PageProps) {
   if (!listingRow) notFound();
   const listing = listingRow as Listing;
   const brand = await getBrandProfileForListing(supabase, listing);
+  const isHost = audienceOf(brand) === "host";
 
   const { data: pieceRows } = await supabase
     .from("content_pieces")
@@ -132,7 +134,7 @@ export default async function SharedCampaignPage({ params }: PageProps) {
           </p>
           <p className="mt-5 max-w-2xl text-white/90">
             Your 14-day social campaign: {counts.reel} reels, {counts.post} posts and {counts.story} stories,
-            captioned and ready to post. One piece a day, starting the day the listing goes live.
+            captioned and ready to post. One piece a day, starting the day {isHost ? "you open bookings" : "the listing goes live"}.
           </p>
           <a
             href={`/api/share/${encodeURIComponent(params.token)}/download`}
@@ -157,7 +159,12 @@ export default async function SharedCampaignPage({ params }: PageProps) {
         {/* How to use */}
         <section className="mb-10 grid gap-4 sm:grid-cols-3">
           {[
-            ["Post one a day", "Day 1 is the day the listing goes live. Each card shows the best time to post."],
+            [
+              "Post one a day",
+              isHost
+                ? "Day 1 is the day you start promoting the stay. Each card shows the best time to post."
+                : "Day 1 is the day the listing goes live. Each card shows the best time to post.",
+            ],
             ["Tap to copy", "Every caption and hashtag set copies with one tap, ready to paste."],
             ["Keep the audio", "Reels already have music and sound. Post them with their original audio."],
           ].map(([title, body], i) => (

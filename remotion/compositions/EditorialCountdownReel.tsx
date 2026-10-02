@@ -292,7 +292,8 @@ const EndScene: React.FC<{
   address: string;
   headshot: string;
   logo: string;
-}> = ({ solid, accent, agentName, brandName, phone, address, headshot, logo }) => {
+  cta?: string;
+}> = ({ solid, accent, agentName, brandName, phone, address, headshot, logo, cta }) => {
   const frame = useCurrentFrame();
   const fg = textOn(solid);
   const wipe = interpolate(frame, [0, 14], [0, 100], {
@@ -313,7 +314,7 @@ const EndScene: React.FC<{
         }}
       >
         <div style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 30, letterSpacing: "0.22em", textTransform: "uppercase", color: accent, ...rise(frame, 10) }}>
-          Book a showing
+          {cta ?? "Book a showing"}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 34, marginTop: 30, ...rise(frame, 16) }}>
           {headshot ? (
@@ -349,7 +350,8 @@ export const EditorialCountdownReel: React.FC<EditorialCountdownReelProps> = (pr
   const accent = highlightColor(props);
   const solid = solidColor(props);
   const city = (props.cityLine ?? "").split(",")[0].trim();
-  const header = city ? `Just listed · ${city}` : "Just listed";
+  const hero = props.heroLabel ?? "Just listed";
+  const header = city ? `${hero} · ${city}` : hero;
   const fallback = [
     (props.stats ?? []).join(" · ") || props.priceLabel || "",
     props.priceLabel || props.cityLine || "",
@@ -391,6 +393,7 @@ export const EditorialCountdownReel: React.FC<EditorialCountdownReelProps> = (pr
           address={[props.address, props.cityLine].filter(Boolean).join(", ")}
           headshot={props.agentHeadshotUrl ?? ""}
           logo={brandLogoUrl}
+          cta={props.ctaLine}
         />
       </Sequence>
 

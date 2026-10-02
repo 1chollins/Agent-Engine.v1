@@ -1,17 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
-const REQUIRED_FIELDS = [
-  "agent_name",
-  "agent_title",
-  "brokerage_name",
-  "phone",
-  "email",
-  "headshot_path",
-  "logo_path",
-  "primary_color",
-  "secondary_color",
-  "tone",
-] as const;
+/** Name, phone and email only — photos, title and brokerage are optional. */
+const REQUIRED_FIELDS = ["agent_name", "phone", "email"] as const;
 
 type CheckResult =
   | { complete: true }

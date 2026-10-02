@@ -2,6 +2,15 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
+import {
+  audienceOf,
+  audienceRules,
+  AUDIENCE_COPY,
+  listingPromptDetails,
+  priceLabel,
+  statLines,
+  THEMES,
+} from "@/lib/audience";
 
 function getAnthropicClient() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -16,14 +25,6 @@ export type ReelOverlayResult = {
   text_overlay: string; // JSON stringified array of phrases
 };
 
-const REEL_OVERLAY_ANGLES = [
-  "Room-by-room highlights — kitchen, living, master, outdoor",
-  "Lifestyle selling points — morning coffee spot, entertaining space, quiet retreat",
-  "Numbers that sell — price, sqft, beds/baths, lot size",
-  "Location perks — nearby amenities, commute times, school district",
-  "Emotional hooks — dream home language, future-casting, aspirational",
-];
-
 export async function generateReelOverlays(
   listing: Listing,
   brand: BrandProfile,
@@ -32,29 +33,25 @@ export async function generateReelOverlays(
 ): Promise<ReelOverlayResult[]> {
   const supabase = createServiceClient();
 
-  const price = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(listing.price);
+  const audience = audienceOf(brand);
+  const copy = AUDIENCE_COPY[audience];
+  const angles = THEMES[audience].overlays;
+  const price = priceLabel(listing.price, audience);
+  const factsExample = [...statLines(listing, audience).slice(0, 2), price].filter(Boolean).join(" • ");
 
   const angleList = reelDays
-    .map((day, i) => `- Day ${day}: "${REEL_OVERLAY_ANGLES[i % REEL_OVERLAY_ANGLES.length]}"`)
+    .map((day, i) => `- Day ${day}: "${angles[i % angles.length]}"`)
     .join("\n");
 
-  const prompt = `You are a real estate video content creator writing text overlays for Instagram/Facebook Reels.
+  const prompt = `You are a ${copy.videoWriter} writing text overlays for Instagram/Facebook Reels.
 
 PROPERTY:
-- Address: ${listing.address}, ${listing.city}, ${listing.state}
-- Price: ${price}
-- Type: ${listing.property_type.replace("_", " ")}
-${listing.bedrooms ? `- Bedrooms: ${listing.bedrooms}` : ""}
-${listing.bathrooms ? `- Bathrooms: ${listing.bathrooms}` : ""}
-- Sqft: ${listing.sqft.toLocaleString()}
-- Features: ${listing.features}
-${listing.neighborhood ? `- Neighborhood: ${listing.neighborhood}` : ""}
+${listingPromptDetails(listing, audience)}
 
-AGENT: ${brand.agent_name}, ${brand.brokerage_name}
+${audience === "host" ? "HOST" : "AGENT"}: ${[brand.agent_name, brand.brokerage_name].filter(Boolean).join(", ")}
+
+RULES FOR THIS PROPERTY:
+${audienceRules(listing, audience)}
 
 Generate text overlay phrases for ${reelDays.length} video reels:
 ${angleList}
@@ -66,14 +63,15 @@ RULES:
 - Phrases should be punchy, property-specific, and visually impactful
 - Reference actual details — don't be generic
 - Each reel's phrases should follow its angle/theme
-- The last phrase in each reel should be a CTA or the agent's name
+- The last phrase in each reel should be a CTA or the ${copy.noun}'s name
 - No hashtags in overlays
 
-Examples of good overlay phrases:
-- "4 Beds • 3 Baths • ${price}"
-- "Chef's Kitchen with Marble Island"
+Examples of good overlay phrases (style only — use this property's real details):
+${factsExample ? `- "${factsExample}"\n` : ""}${audience === "host" ? `- "Private Pool, Sunset Views"
+- "5 Min to the Beach"
+- "Book Your Dates Today"` : `- "Chef's Kitchen with Marble Island"
 - "10 Min to Downtown ${listing.city}"
-- "Call ${brand.agent_name} Today"
+- "Call ${brand.agent_name} Today"`}
 
 Respond in this exact JSON format:
 [

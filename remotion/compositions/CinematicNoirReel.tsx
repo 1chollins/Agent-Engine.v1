@@ -156,7 +156,9 @@ function formatCount(target: string, t: number): string {
   if (!digits) return target;
   const value = Math.round(Number(digits) * t);
   const prefix = target.trim().startsWith("$") ? "$" : "";
-  return prefix + value.toLocaleString("en-US");
+  // Keep what follows the number, e.g. "/night".
+  const suffix = target.replace(/^[^0-9]*[0-9,]+/, "");
+  return prefix + value.toLocaleString("en-US") + suffix;
 }
 
 export const CinematicNoirReel: React.FC<CinematicNoirReelProps> = (props) => {
@@ -192,7 +194,13 @@ export const CinematicNoirReel: React.FC<CinematicNoirReelProps> = (props) => {
 
       {/* Price */}
       <Sequence from={PRICE.from} durationInFrames={PRICE.len + XF}>
-        <PriceCard price={props.priceLabel ?? ""} stats={props.stats ?? []} accent={accent} />
+        <PriceCard
+          price={props.priceLabel ?? ""}
+          stats={props.stats ?? []}
+          accent={accent}
+          kicker={props.priceKicker}
+          fallback={props.cityLine ?? ""}
+        />
         <LightLeak />
       </Sequence>
 
@@ -206,6 +214,7 @@ export const CinematicNoirReel: React.FC<CinematicNoirReelProps> = (props) => {
           phone={props.phone ?? ""}
           headshot={props.agentHeadshotUrl ?? ""}
           logo={props.brandLogoUrl}
+          cta={props.ctaLine}
         />
       </Sequence>
 
@@ -295,7 +304,14 @@ const SceneTitle: React.FC<{ index: number; title: string; accent: string }> = (
   );
 };
 
-const PriceCard: React.FC<{ price: string; stats: string[]; accent: string }> = ({ price, stats, accent }) => {
+const PriceCard: React.FC<{
+  price: string;
+  stats: string[];
+  accent: string;
+  kicker?: string;
+  /** Shown big when the listing has no price. */
+  fallback?: string;
+}> = ({ price, stats, accent, kicker, fallback }) => {
   const frame = useCurrentFrame();
   const fadeIn = interpolate(frame, [0, XF], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const t = interpolate(frame, [8, 32], [0, 1], {
@@ -315,7 +331,9 @@ const PriceCard: React.FC<{ price: string; stats: string[]; accent: string }> = 
       />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", textAlign: "center" }}>
         <div style={{ marginTop: -80 }}>
-          <Label text="Offered at" color="rgba(246,244,238,0.72)" style={fadeUp(frame, 4)} />
+          {price ? (
+            <Label text={kicker ?? "Offered at"} color="rgba(246,244,238,0.72)" style={fadeUp(frame, 4)} />
+          ) : null}
           <div
             style={{
               fontFamily: SERIF_FAMILY,
@@ -329,9 +347,26 @@ const PriceCard: React.FC<{ price: string; stats: string[]; accent: string }> = 
               fontVariantNumeric: "lining-nums",
             }}
           >
-            {price ? formatCount(price, t) : ""}
+            {price
+              ? formatCount(price, t)
+              : null}
           </div>
-          {stats.length > 0 ? (
+          {!price ? (
+            <div
+              style={{
+                fontFamily: SERIF_FAMILY,
+                fontWeight: 600,
+                fontSize: 96,
+                lineHeight: 1.05,
+                color: accent,
+                padding: "0 70px",
+                ...fadeUp(frame, 6),
+              }}
+            >
+              {stats.length > 0 ? stats.join(" · ") : fallback}
+            </div>
+          ) : null}
+          {price && stats.length > 0 ? (
             <div style={{ fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: 38, letterSpacing: "0.12em", color: "#F6F4EE", marginTop: 34, ...fadeUp(frame, 36) }}>
               {stats.join("  ·  ").toUpperCase()}
             </div>
@@ -350,7 +385,8 @@ const AgentCard: React.FC<{
   phone: string;
   headshot: string;
   logo: string;
-}> = ({ photo, accent, agentName, brandName, phone, headshot, logo }) => {
+  cta?: string;
+}> = ({ photo, accent, agentName, brandName, phone, headshot, logo, cta }) => {
   const frame = useCurrentFrame();
   const fadeIn = interpolate(frame, [0, XF], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   return (
@@ -383,7 +419,7 @@ const AgentCard: React.FC<{
               {phone}
             </div>
           ) : null}
-          <Label text="Schedule a private showing" color="rgba(246,244,238,0.7)" style={{ marginTop: 26, ...fadeUp(frame, 34) }} />
+          <Label text={cta ?? "Schedule a private showing"} color="rgba(246,244,238,0.7)" style={{ marginTop: 26, ...fadeUp(frame, 34) }} />
           {logo ? <Img src={logo} style={{ height: 84, width: "auto", objectFit: "contain", marginTop: 46, ...fadeUp(frame, 40) }} /> : null}
         </div>
       </AbsoluteFill>

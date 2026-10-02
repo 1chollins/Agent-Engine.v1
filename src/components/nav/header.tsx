@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { href: "/quick-post", label: "Quick Post" },
   { href: "/listings", label: "Campaigns" },
   { href: "/content", label: "Content" },
-  { href: "/agents", label: "Agents" },
+  { href: "/agents", label: "Clients" },
   { href: "/leads", label: "Leads" },
   { href: "/settings/brand", label: "Settings" },
 ];

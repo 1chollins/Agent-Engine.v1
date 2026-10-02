@@ -16,11 +16,11 @@ export function DeleteAgentButton({ profileId }: { profileId: string }) {
           onClick={() => setArmed(true)}
           className="text-sm font-medium text-red-600 hover:text-red-700"
         >
-          Delete this agent
+          Delete this client
         </button>
       ) : (
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600">Delete this agent profile?</span>
+          <span className="text-sm text-gray-600">Delete this client profile?</span>
           <button
             type="button"
             disabled={pending}

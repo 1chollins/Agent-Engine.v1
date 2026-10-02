@@ -25,6 +25,13 @@ export const reelExtrasShape = {
   stats: z.array(z.string()).optional(),
   /** Sound effects on cuts. Defaults to on. */
   sfx: z.boolean().optional(),
+  /**
+   * Wording overrides for host (short-term rental) campaigns. Unset for
+   * realtor campaigns, so each style keeps its own sale wording.
+   */
+  heroLabel: z.string().optional(),
+  priceKicker: z.string().optional(),
+  ctaLine: z.string().optional(),
 };
 
 export type ReelExtras = {
@@ -40,6 +47,9 @@ export type ReelExtras = {
   priceLabel?: string;
   stats?: string[];
   sfx?: boolean;
+  heroLabel?: string;
+  priceKicker?: string;
+  ctaLine?: string;
 };
 
 const FALLBACK_HIGHLIGHT = "#E8BE84"; // warm gold

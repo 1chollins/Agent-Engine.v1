@@ -55,6 +55,7 @@ export default async function QuickPostPage() {
       socialHandle: p.instagram_handle ?? undefined,
       headshotUrl,
       logoUrl,
+      isHost: p.profile_type === "host",
     };
   }
 

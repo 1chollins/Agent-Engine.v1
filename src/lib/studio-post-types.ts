@@ -19,7 +19,11 @@ export type PostTypeKey =
   | "coming_soon"
   | "open_house"
   | "agent_promo"
-  | "recently_photographed";
+  | "recently_photographed"
+  // Short-term rental (Airbnb host) posts
+  | "now_booking"
+  | "open_dates"
+  | "guest_favorite";
 
 export type PostTypeConfig = {
   readonly name: string;
@@ -30,6 +34,8 @@ export type PostTypeConfig = {
   readonly sensitive?: boolean;
   /** Agent self-promo — services/social fields instead of listing specs. */
   readonly agent?: boolean;
+  /** Short-term rental post — price reads as a nightly rate. */
+  readonly host?: boolean;
 };
 
 export const POST_TYPES: Record<PostTypeKey, PostTypeConfig> = {
@@ -107,6 +113,27 @@ export const POST_TYPES: Record<PostTypeKey, PostTypeConfig> = {
     defaultCta: "Book your shoot",
     sensitive: true,
   },
+  now_booking: {
+    name: "Now Booking",
+    eyebrow: "NOW BOOKING",
+    showPrice: true,
+    defaultCta: "Book your dates — link in bio",
+    host: true,
+  },
+  open_dates: {
+    name: "Open Dates",
+    eyebrow: "DATES JUST OPENED",
+    showPrice: true,
+    defaultCta: "Grab them before they're gone — link in bio",
+    host: true,
+  },
+  guest_favorite: {
+    name: "Guest Favorite",
+    eyebrow: "GUEST FAVORITE",
+    showPrice: false,
+    defaultCta: "Book your stay — link in bio",
+    host: true,
+  },
 };
 
 export const POST_TYPE_ORDER: readonly PostTypeKey[] = [
@@ -121,6 +148,19 @@ export const POST_TYPE_ORDER: readonly PostTypeKey[] = [
   "coming_soon",
   "open_house",
   "agent_promo",
+  "recently_photographed",
+  "now_booking",
+  "open_dates",
+  "guest_favorite",
+];
+
+/** Host accounts see their own post types first, sale types after. */
+export const HOST_POST_TYPE_ORDER: readonly PostTypeKey[] = [
+  "now_booking",
+  "open_dates",
+  "guest_favorite",
+  "now_leasing",
+  "coming_soon",
   "recently_photographed",
 ];
 

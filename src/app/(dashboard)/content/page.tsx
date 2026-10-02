@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Listing } from "@/types/listing";
 import type { ContentPackage } from "@/types/content";
+import { priceLabel } from "@/lib/audience";
 
 const PREVIEW_COUNT = 7;
 /** Campaigns shown before "Show all" — each one loads up to 7 thumbnails,
@@ -53,6 +54,13 @@ export default async function ContentPage({
   const showAll = searchParams?.all === "1";
   const typedListings = showAll ? allListings : allListings.slice(0, CAMPAIGN_LIMIT);
   const hiddenCount = allListings.length - typedListings.length;
+
+  const { data: hostRows } = await supabase
+    .from("brand_profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("profile_type", "host");
+  const hostProfiles = new Set((hostRows ?? []).map((r: { id: string }) => r.id));
 
   // Load the latest package per listing
   const listingsWithStats = await Promise.all(
@@ -254,7 +262,12 @@ export default async function ContentPage({
                       {listing.address}
                     </p>
                     <p className="mt-0.5 text-sm text-gray-500">
-                      {listing.city}, {listing.state} · ${listing.price.toLocaleString()}
+                      {[
+                        `${listing.city}, ${listing.state}`,
+                        priceLabel(listing.price, hostProfiles.has(listing.brand_profile_id) ? "host" : "agent"),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                       {pkg && (
                         <span className="ml-2 text-xs text-gray-400">
                           {pkg.completed_pieces}/{pkg.total_pieces} pieces

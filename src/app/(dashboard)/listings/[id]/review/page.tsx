@@ -7,6 +7,7 @@ import type { BrandProfile } from "@/types/brand-profile";
 import { PROPERTY_TYPES, MIN_PHOTOS } from "@/types/listing";
 import { GenerateActions } from "@/components/listing/generate-actions";
 import { getBrandProfileForListing } from "@/lib/brand-profile-for-listing";
+import { audienceOf, AUDIENCE_COPY, priceLabel } from "@/lib/audience";
 
 type ReviewPageProps = {
   params: { id: string };
@@ -38,6 +39,7 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
   const typedListing = listing as Listing;
   const typedPhotos = (photos ?? []) as ListingPhoto[];
   const typedProfile = profile as BrandProfile | null;
+  const audience = audienceOf(typedProfile);
   const photoCount = typedPhotos.length;
   const canSubmit = photoCount >= MIN_PHOTOS;
   const propertyLabel = PROPERTY_TYPES.find(
@@ -84,18 +86,31 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
             label="Location"
             value={`${typedListing.city}, ${typedListing.state} ${typedListing.zip_code}`}
           />
-          <DetailRow label="Type" value={propertyLabel ?? typedListing.property_type} />
           <DetailRow
-            label="Price"
-            value={`$${typedListing.price.toLocaleString()}`}
+            label="Campaign for"
+            value={audience === "host" ? "Airbnb guests (host)" : "Buyers (realtor)"}
           />
+          {(propertyLabel ?? typedListing.property_type) && (
+            <DetailRow label="Type" value={propertyLabel ?? typedListing.property_type ?? ""} />
+          )}
+          {priceLabel(typedListing.price, audience) && (
+            <DetailRow
+              label={AUDIENCE_COPY[audience].priceField}
+              value={priceLabel(typedListing.price, audience) ?? ""}
+            />
+          )}
+          {audience === "host" && typedListing.max_guests != null && (
+            <DetailRow label="Sleeps" value={`${typedListing.max_guests} guests`} />
+          )}
           {typedListing.bedrooms != null && (
             <DetailRow label="Bedrooms" value={String(typedListing.bedrooms)} />
           )}
           {typedListing.bathrooms != null && (
             <DetailRow label="Bathrooms" value={String(typedListing.bathrooms)} />
           )}
-          <DetailRow label="Sq Ft" value={typedListing.sqft.toLocaleString()} />
+          {typedListing.sqft != null && (
+            <DetailRow label="Sq Ft" value={typedListing.sqft.toLocaleString()} />
+          )}
           {typedListing.lot_size && (
             <DetailRow label="Lot Size" value={typedListing.lot_size} />
           )}
@@ -230,7 +245,7 @@ export default async function ListingReviewPage({ params }: ReviewPageProps) {
               )}
             </div>
             <div className="text-sm text-gray-600">
-              {typedProfile.agent_name} — {typedProfile.brokerage_name}
+              {[typedProfile.agent_name, typedProfile.brokerage_name].filter(Boolean).join(" — ")}
             </div>
           </div>
         </section>

@@ -27,6 +27,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  // Facts are optional on a listing; an empty panel is just a dark box.
+  if (lines.length === 0) return null;
+
   return (
     <AbsoluteFill
       style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: 260 }}

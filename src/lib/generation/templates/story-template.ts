@@ -1,6 +1,7 @@
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
-import { formatPrice, hexToRgba } from "../image-renderer";
+import { hexToRgba } from "../image-renderer";
+import { audienceOf, AUDIENCE_COPY, priceLabel } from "@/lib/audience";
 
 type StoryTemplateProps = {
   listing: Listing;
@@ -17,7 +18,8 @@ export function buildStoryTemplate(props: StoryTemplateProps) {
   const { listing, brand, photoBase64, photoMimeType, headshot64, logo64, teaser, cta } = props;
   const width = 1080;
   const height = 1920;
-  const price = formatPrice(listing.price);
+  const audience = audienceOf(brand);
+  const price = priceLabel(listing.price, audience) ?? AUDIENCE_COPY[audience].heroLabel;
   const photoUrl = `data:${photoMimeType};base64,${photoBase64}`;
   const primaryBg = hexToRgba(brand.primary_color, 0.9);
   const accentColor = brand.accent_color ?? brand.secondary_color;
@@ -110,7 +112,7 @@ export function buildStoryTemplate(props: StoryTemplateProps) {
                     color: "rgba(255,255,255,0.9)",
                     fontWeight: 400,
                   },
-                  children: brand.brokerage_name,
+                  children: brand.brokerage_name ?? "",
                 },
               },
             ].filter(Boolean),

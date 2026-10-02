@@ -4,18 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { BrandProfileFormState, BrandTone } from "@/types/brand-profile";
 
-const REQUIRED_FIELDS = [
-  "agent_name",
-  "agent_title",
-  "brokerage_name",
-  "phone",
-  "email",
-  "headshot_path",
-  "logo_path",
-  "primary_color",
-  "secondary_color",
-  "tone",
-] as const;
+/** Name, phone and email only — everything else is optional (2026-10). */
+const REQUIRED_FIELDS = ["agent_name", "phone", "email"] as const;
 
 const VALID_TONES: BrandTone[] = ["professional", "friendly", "luxury", "casual"];
 
@@ -166,7 +156,7 @@ export async function deleteAgentProfile(profileId: string): Promise<{ error: st
     .eq("user_id", user.id)
     .eq("brand_profile_id", profileId);
   if (count && count > 0) {
-    return { error: `This agent has ${count} campaign${count === 1 ? "" : "s"} and can't be deleted.` };
+    return { error: `This client has ${count} campaign${count === 1 ? "" : "s"} and can't be deleted.` };
   }
 
   const { error } = await supabase
@@ -180,22 +170,29 @@ export async function deleteAgentProfile(profileId: string): Promise<{ error: st
   redirect("/agents");
 }
 
+const optional = (formData: FormData, key: string): string | null => {
+  const value = String(formData.get(key) ?? "").trim();
+  return value ? value : null;
+};
+
 function extractFields(formData: FormData) {
   return {
-    agent_name: formData.get("agent_name") as string,
-    agent_title: formData.get("agent_title") as string,
-    brokerage_name: formData.get("brokerage_name") as string,
-    phone: formData.get("phone") as string,
-    email: formData.get("email") as string,
-    website: (formData.get("website") as string) || null,
-    instagram_handle: (formData.get("instagram_handle") as string) || null,
-    facebook_url: (formData.get("facebook_url") as string) || null,
-    headshot_path: formData.get("headshot_path") as string,
-    logo_path: formData.get("logo_path") as string,
-    primary_color: formData.get("primary_color") as string,
-    secondary_color: formData.get("secondary_color") as string,
-    accent_color: (formData.get("accent_color") as string) || null,
-    tone: formData.get("tone") as string,
+    profile_type: formData.get("profile_type") === "host" ? "host" : "agent",
+    agent_name: String(formData.get("agent_name") ?? "").trim(),
+    agent_title: optional(formData, "agent_title"),
+    brokerage_name: optional(formData, "brokerage_name"),
+    phone: String(formData.get("phone") ?? "").trim(),
+    email: String(formData.get("email") ?? "").trim(),
+    booking_url: optional(formData, "booking_url"),
+    website: optional(formData, "website"),
+    instagram_handle: optional(formData, "instagram_handle"),
+    facebook_url: optional(formData, "facebook_url"),
+    headshot_path: optional(formData, "headshot_path"),
+    logo_path: optional(formData, "logo_path"),
+    primary_color: optional(formData, "primary_color") ?? "#3d4a2f",
+    secondary_color: optional(formData, "secondary_color") ?? "#f2ebd8",
+    accent_color: optional(formData, "accent_color"),
+    tone: optional(formData, "tone") ?? "professional",
   };
 }
 

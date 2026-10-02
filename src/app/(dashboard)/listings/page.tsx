@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Listing, ListingStatus, ListingPhoto } from "@/types/listing";
+import { priceLabel } from "@/lib/audience";
 
 const STATUS_STYLES: Record<ListingStatus, { bg: string; text: string; label: string }> = {
   draft: { bg: "bg-gray-100", text: "text-gray-700", label: "Draft" },
@@ -28,9 +29,15 @@ export default async function ListingsPage() {
   // Which agent each campaign is for — only worth showing once client agents exist.
   const { data: profileRows } = await supabase
     .from("brand_profiles")
-    .select("id, agent_name, is_primary")
+    .select("id, agent_name, is_primary, profile_type")
     .eq("user_id", user.id);
-  const profiles = (profileRows ?? []) as { id: string; agent_name: string; is_primary: boolean }[];
+  const profiles = (profileRows ?? []) as {
+    id: string;
+    agent_name: string;
+    is_primary: boolean;
+    profile_type: string | null;
+  }[];
+  const hostProfiles = new Set(profiles.filter((p) => p.profile_type === "host").map((p) => p.id));
   const agentNames = new Map(profiles.map((p) => [p.id, p.agent_name]));
   const showAgent = profiles.some((p) => !p.is_primary);
 
@@ -143,9 +150,11 @@ export default async function ListingsPage() {
                     )}
                   </p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold text-forest">
-                      ${listing.price.toLocaleString()}
-                    </span>
+                    {priceLabel(listing.price, hostProfiles.has(listing.brand_profile_id) ? "host" : "agent") && (
+                      <span className="text-sm font-semibold text-forest">
+                        {priceLabel(listing.price, hostProfiles.has(listing.brand_profile_id) ? "host" : "agent")}
+                      </span>
+                    )}
                     {specs.length > 0 && (
                       <span className="hidden text-xs text-gray-400 sm:inline">
                         {specs.join(" · ")}

@@ -15,6 +15,7 @@ import type { TripleSlideStoryProps } from "../../../remotion/compositions/Tripl
 import type { SimpleShowcaseReelProps } from "../../../remotion/compositions/SimpleShowcaseReel";
 import type { FourSceneStoryProps } from "../../../remotion/compositions/FourSceneStory";
 import type { JustListedReelProps } from "../../../remotion/compositions/JustListedReel";
+import { audienceOf, AUDIENCE_COPY, priceLabel, statLines } from "@/lib/audience";
 
 export type CompositionTemplateKey =
   | "day1_just_listed"
@@ -124,33 +125,36 @@ function parseOverlay(raw: string | null | undefined): string[] {
   }
 }
 
-/** Agent colors + phrases shared by every reel. */
+/** Agent colors + phrases + realtor/host wording shared by every reel. */
 function brandExtras(brand: Record<string, unknown> | null, textOverlay?: string | null) {
+  // Host campaigns swap the sale wording; realtor reels keep each style's own.
+  const hostWording =
+    audienceOf(brand) === "host"
+      ? {
+          heroLabel: "Now booking",
+          priceKicker: AUDIENCE_COPY.host.priceKicker,
+          ctaLine: AUDIENCE_COPY.host.ctaLine,
+        }
+      : {};
   return {
     primaryColor: (brand?.primary_color as string | null) ?? undefined,
     secondaryColor: (brand?.secondary_color as string | null) ?? undefined,
     accentColor: (brand?.accent_color as string | null) ?? null,
     overlayPhrases: parseOverlay(textOverlay),
+    ...hostWording,
   };
 }
 
-/** Listing facts for the editorial / cinematic styles. */
-function listingFacts(listing: Record<string, unknown>) {
-  const price = listing.price as number | null;
-  const beds = listing.bedrooms as number | null;
-  const baths = listing.bathrooms as number | null;
-  const sqft = listing.sqft as number | null;
-  const stats: string[] = [];
-  if (beds != null) stats.push(`${beds} ${beds === 1 ? "Bed" : "Beds"}`);
-  if (baths != null) stats.push(`${baths} ${baths === 1 ? "Bath" : "Baths"}`);
-  if (sqft) stats.push(`${sqft.toLocaleString("en-US")} Sq Ft`);
+/** Listing facts for the editorial / cinematic styles (only what was given). */
+function listingFacts(listing: Record<string, unknown>, brand: Record<string, unknown> | null) {
+  const audience = audienceOf(brand);
   return {
     address: (listing.address as string) ?? "",
     cityLine: [listing.city, [listing.state, listing.zip_code].filter(Boolean).join(" ")]
       .filter(Boolean)
       .join(", "),
-    priceLabel: price ? `$${price.toLocaleString("en-US")}` : "",
-    stats,
+    priceLabel: priceLabel(listing.price as number | null, audience) ?? "",
+    stats: statLines(listing, audience),
   };
 }
 
@@ -172,31 +176,29 @@ export async function buildCompositionInputProps(
 
   switch (templateKey) {
     case "day1_just_listed": {
-      const price = listing.price as number;
-      const beds = listing.bedrooms as number | null;
-      const baths = listing.bathrooms as number | null;
-      const sqft = listing.sqft as number | null;
+      const audience = audienceOf(brand);
       const lotSize = listing.lot_size as string | null;
       const yearBuilt = listing.year_built as number | null;
 
-      const details1: string[] = [];
-      if (beds != null) details1.push(`${beds} Beds`);
-      if (baths != null) details1.push(`${baths} Baths`);
-      if (sqft != null) details1.push(`${sqft.toLocaleString()} sqft`);
-
-      const details2: string[] = [`$${price.toLocaleString()}`];
-      if (lotSize) details2.push(lotSize);
-      if (yearBuilt) details2.push(`Built ${yearBuilt}`);
+      // Only facts that were filled in. A panel with nothing to say is left
+      // empty and skipped by the composition.
+      const details1 = statLines(listing, audience);
+      const details2: string[] = [];
+      const price = priceLabel(listing.price as number | null, audience);
+      if (price) details2.push(price);
+      if (audience === "agent" && lotSize) details2.push(lotSize);
+      if (audience === "agent" && yearBuilt) details2.push(`Built ${yearBuilt}`);
+      if (audience === "host" && listing.city) details2.push(String(listing.city));
 
       const props: JustListedReelProps = {
-        heroLabel: "Just Listed",
+        heroLabel: AUDIENCE_COPY[audience].heroLabel,
         addressLine1: listing.address as string,
         addressLine2: `${listing.city}, ${listing.state} ${listing.zip_code}`,
         details1,
         details2,
         photoUrls,
         agentName: (brand?.agent_name as string) ?? "",
-        brandName: (brand?.brokerage_name as string) ?? "",
+        brandName: (brand?.brokerage_name as string | null) ?? "",
         phone: (brand?.phone as string) ?? "",
         email: (brand?.email as string) ?? "",
         agentHeadshotUrl: await getBrandAssetUrl(
@@ -218,7 +220,7 @@ export async function buildCompositionInputProps(
     case "reel_cinematic_noir": {
       const props: SimpleShowcaseReelProps = {
         photoUrls,
-        brandName: (brand?.brokerage_name as string) ?? "",
+        brandName: (brand?.brokerage_name as string | null) ?? "",
         brandLogoUrl: await getBrandAssetUrl(
           supabase,
           brand?.logo_path as string | null
@@ -232,7 +234,7 @@ export async function buildCompositionInputProps(
           supabase,
           brand?.headshot_path as string | null
         ),
-        ...listingFacts(listing),
+        ...listingFacts(listing, brand),
       };
       return props;
     }
@@ -251,15 +253,29 @@ export async function buildCompositionInputProps(
     }
 
     case "story_four_scene": {
+      const audience = audienceOf(brand);
+      const city = (listing.city as string) ?? "";
+      const stats = statLines(listing, audience);
       const props: FourSceneStoryProps = {
         photoUrls,
-        city: (listing.city as string) ?? "",
+        city,
         beds: (listing.bedrooms as number) ?? 0,
         baths: (listing.bathrooms as number) ?? 0,
         sqft: (listing.sqft as number | null) ?? null,
         address: (listing.address as string) ?? "",
-        website: (brand?.website as string | null) ?? null,
+        website:
+          (audience === "host" ? (brand?.booking_url as string | null) : null) ??
+          (brand?.website as string | null) ??
+          null,
         seed,
+        headline: city
+          ? `${AUDIENCE_COPY[audience].newLabel}: ${city}`
+          : AUDIENCE_COPY[audience].newLabel,
+        factsLine:
+          stats.slice(0, 3).join(" · ") ||
+          priceLabel(listing.price as number | null, audience) ||
+          city,
+        closingLine: audience === "host" ? "Link in bio to book" : "Link in bio for full tour",
       };
       return props;
     }

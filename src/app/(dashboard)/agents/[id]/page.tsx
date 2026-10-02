@@ -25,7 +25,7 @@ export default async function EditAgentPage({ params }: { params: { id: string }
   return (
     <div className="mx-auto max-w-2xl">
       <Link href="/agents" className="text-sm text-gray-500 hover:text-black">
-        ← Agents
+        ← Clients
       </Link>
       <div className="mb-8 mt-3">
         <h1 className="text-3xl font-bold text-gray-900">{(profile as BrandProfile).agent_name}</h1>

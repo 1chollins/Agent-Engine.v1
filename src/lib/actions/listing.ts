@@ -39,7 +39,7 @@ export async function createListing(
 
   if (!profile) {
     return {
-      error: pickedProfileId ? "Pick an agent from your Agents list" : "Complete your brand profile first",
+      error: pickedProfileId ? "Pick a client from your Clients list" : "Complete your brand profile first",
       success: null,
     };
   }
@@ -78,7 +78,7 @@ export async function updateListing(
   let brandUpdate: { brand_profile_id?: string } = {};
   if (pickedProfileId) {
     const profile = await resolveBrandProfile(supabase, user.id, pickedProfileId);
-    if (!profile) return { error: "Pick an agent from your Agents list", success: null };
+    if (!profile) return { error: "Pick a client from your Clients list", success: null };
     brandUpdate = { brand_profile_id: profile.id };
   }
 
@@ -229,37 +229,53 @@ async function resolveBrandProfile(
   return (data as { id: string } | null) ?? null;
 }
 
+/** A positive number, or null when blank (everything but the address is optional). */
+function optionalNumber(formData: FormData, key: string): number | null {
+  const raw = String(formData.get(key) ?? "").replace(/[$,\s]/g, "");
+  const n = Number(raw);
+  return raw && Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function optionalText(formData: FormData, key: string): string | null {
+  const value = String(formData.get(key) ?? "").trim();
+  return value ? value : null;
+}
+
 function extractListingFields(formData: FormData) {
-  const propertyType = formData.get("property_type") as string;
-  const wantsBedsBaths = hasBedsAndBaths(propertyType);
+  const propertyType = optionalText(formData, "property_type");
+  const wantsBedsBaths = !propertyType || hasBedsAndBaths(propertyType);
+  const integer = (key: string) => {
+    const n = optionalNumber(formData, key);
+    return n == null ? null : Math.round(n);
+  };
 
   return {
-    address: formData.get("address") as string,
-    city: formData.get("city") as string,
-    state: formData.get("state") as string,
-    zip_code: formData.get("zip_code") as string,
+    address: String(formData.get("address") ?? "").trim(),
+    city: String(formData.get("city") ?? "").trim(),
+    state: String(formData.get("state") ?? "").trim(),
+    zip_code: String(formData.get("zip_code") ?? "").trim(),
     property_type: propertyType,
-    bedrooms: wantsBedsBaths ? Number(formData.get("bedrooms")) || null : null,
-    bathrooms: wantsBedsBaths ? Number(formData.get("bathrooms")) || null : null,
-    sqft: Number(formData.get("sqft")) || 0,
-    lot_size: (formData.get("lot_size") as string) || null,
-    price: Number(formData.get("price")) || 0,
-    year_built: Number(formData.get("year_built")) || null,
-    features: formData.get("features") as string,
-    neighborhood: (formData.get("neighborhood") as string) || null,
-    hoa_info: (formData.get("hoa_info") as string) || null,
-    additional_notes: (formData.get("additional_notes") as string) || null,
+    bedrooms: wantsBedsBaths ? integer("bedrooms") : null,
+    bathrooms: wantsBedsBaths ? optionalNumber(formData, "bathrooms") : null,
+    sqft: integer("sqft"),
+    lot_size: optionalText(formData, "lot_size"),
+    // Sale price for realtors, nightly rate for hosts.
+    price: integer("price"),
+    max_guests: integer("max_guests"),
+    year_built: integer("year_built"),
+    features: optionalText(formData, "features"),
+    neighborhood: optionalText(formData, "neighborhood"),
+    hoa_info: optionalText(formData, "hoa_info"),
+    additional_notes: optionalText(formData, "additional_notes"),
   };
 }
 
+/** Only the address is required (2026-10). */
 function validateListingFields(fields: ReturnType<typeof extractListingFields>): string | null {
-  if (!fields.address) return "Address is required";
+  if (!fields.address) return "Street address is required";
   if (!fields.city) return "City is required";
   if (!fields.state) return "State is required";
   if (!fields.zip_code) return "ZIP code is required";
-  if (!VALID_PROPERTY_TYPES.includes(fields.property_type)) return "Invalid property type";
-  if (!fields.sqft || fields.sqft <= 0) return "Square footage is required";
-  if (!fields.price || fields.price <= 0) return "Price is required";
-  if (!fields.features) return "Key features are required";
+  if (fields.property_type && !VALID_PROPERTY_TYPES.includes(fields.property_type)) return "Invalid property type";
   return null;
 }

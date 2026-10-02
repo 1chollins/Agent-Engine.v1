@@ -43,7 +43,12 @@ const TYPE_TAGS: Record<PostTypeKey, string[]> = {
   open_house: ["#openhouse", "#homeforsale", "#realestate"],
   agent_promo: ["#realtor", "#realestateagent", "#swflrealtor"],
   recently_photographed: ["#commercialphotography", "#realestatemedia", "#swflbusiness"],
+  now_booking: ["#nowbooking", "#vacationrental", "#airbnb", "#bookyourstay"],
+  open_dates: ["#lastminutetravel", "#vacationrental", "#airbnb", "#getaway"],
+  guest_favorite: ["#guestfavorite", "#superhost", "#vacationrental", "#airbnb"],
 };
+
+const HOST_BASE_TAGS = ["#swfl", "#floridatravel", "#vacationmode"];
 
 /** First sentence of the caption, per post type. Keeps the brand voice. */
 function leadLine(input: CaptionInput): string {
@@ -74,6 +79,12 @@ function leadLine(input: CaptionInput): string {
       return `Your local realtor${inArea ? inArea.replace(" in ", " for ") : ""} — let's talk real estate. 🏡`;
     case "recently_photographed":
       return `Recently photographed${inArea}. 📸`;
+    case "now_booking":
+      return `Now booking${inArea}. 🌴`;
+    case "open_dates":
+      return `Dates just opened${inArea}. 📅`;
+    case "guest_favorite":
+      return `A guest favorite${inArea}. ⭐`;
   }
 }
 
@@ -98,7 +109,12 @@ export function buildCaption(input: CaptionInput): { caption: string; hashtags: 
   }
 
   if (input.showPrice && input.price.trim()) {
-    lines.push(`Offered at ${input.price.trim()}.`);
+    const price = input.price.trim();
+    lines.push(
+      config.host
+        ? `Stays from ${price}${/night/i.test(price) ? "" : "/night"}.`
+        : `Offered at ${price}.`,
+    );
   }
 
   if (input.cta.trim()) {
@@ -108,11 +124,18 @@ export function buildCaption(input: CaptionInput): { caption: string; hashtags: 
   // Hashtags
   const areaKey = input.area.trim().toLowerCase();
   const areaTags = Object.keys(AREA_TAGS).find((k) => areaKey.includes(k));
-  const tags = [
-    ...BASE_TAGS,
-    ...(areaTags ? AREA_TAGS[areaTags] : []),
-    ...TYPE_TAGS[input.postType],
-  ];
+  const tags = config.host
+    ? [
+        ...HOST_BASE_TAGS,
+        // Just the city tag; the "…realestate" area tags are for listings.
+        ...(areaTags ? AREA_TAGS[areaTags].slice(0, 1) : []),
+        ...TYPE_TAGS[input.postType],
+      ]
+    : [
+        ...BASE_TAGS,
+        ...(areaTags ? AREA_TAGS[areaTags] : []),
+        ...TYPE_TAGS[input.postType],
+      ];
   const hashtags = Array.from(new Set(tags)).join(" ");
 
   return { caption: lines.join("\n\n"), hashtags };

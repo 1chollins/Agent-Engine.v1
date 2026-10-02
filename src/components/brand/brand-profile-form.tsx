@@ -8,8 +8,8 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { ImageUpload } from "@/components/brand/image-upload";
 import { ColorPicker } from "@/components/brand/color-picker";
 import { ColorPreview } from "@/components/brand/color-preview";
-import type { BrandProfile } from "@/types/brand-profile";
-import { BRAND_TONES } from "@/types/brand-profile";
+import type { BrandProfile, ProfileType } from "@/types/brand-profile";
+import { BRAND_TONES, PROFILE_TYPES } from "@/types/brand-profile";
 
 type BrandProfileFormProps = {
   mode: "create" | "edit";
@@ -50,6 +50,8 @@ export function BrandProfileForm({
   const [secondaryColor, setSecondaryColor] = useState(initialData?.secondary_color ?? "#f3f4f6");
   const [accentColor, setAccentColor] = useState(initialData?.accent_color ?? "");
   const [agentName, setAgentName] = useState(initialData?.agent_name ?? "");
+  const [profileType, setProfileType] = useState<ProfileType>(initialData?.profile_type ?? "agent");
+  const isHost = profileType === "host";
 
   const handleHeadshotUploaded = useCallback((path: string) => setHeadshotPath(path), []);
   const handleLogoUploaded = useCallback((path: string) => setLogoPath(path), []);
@@ -75,26 +77,84 @@ export function BrandProfileForm({
         </p>
       )}
 
-      {/* Agent Info */}
+      {/* Who it's for */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-gray-900">
+          {isAgent ? "This client is a…" : "I market…"}
+        </h2>
+        <input type="hidden" name="profile_type" value={profileType} />
+        <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Profile type">
+          {PROFILE_TYPES.map((t) => {
+            const selected = profileType === t.value;
+            return (
+              <button
+                key={t.value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setProfileType(t.value)}
+                className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+                  selected
+                    ? "border-forest bg-forest text-cream shadow-sm"
+                    : "border-forest/20 bg-white/60 text-ink hover:border-forest/50"
+                }`}
+              >
+                <span className="block text-sm font-semibold">{t.label}</span>
+                <span className={`mt-0.5 block text-xs ${selected ? "text-cream/75" : "text-ink/55"}`}>{t.hint}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Contact — only name, phone and email are required */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">Agent Information</h2>
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {isHost ? "Host information" : "Agent information"}
+          </h2>
+          <p className="mt-0.5 text-sm text-gray-500">Only the fields marked * are required.</p>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
-            label="Agent Name *"
+            label={isHost ? "Host name *" : "Agent name *"}
             name="agent_name"
             required
             autoComplete="name"
             defaultValue={initialData?.agent_name}
             onChange={(e) => setAgentName(e.target.value)}
           />
-          <FormField label="Title *" name="agent_title" placeholder="e.g. Realtor" required defaultValue={initialData?.agent_title} />
-          <FormField label="Brokerage Name *" name="brokerage_name" required defaultValue={initialData?.brokerage_name} />
           <FormField label="Phone *" name="phone" type="tel" required autoComplete="tel" defaultValue={initialData?.phone} />
-          <FormField label="Contact Email *" name="email" type="email" required autoComplete="email" defaultValue={initialData?.email} />
+          <FormField label="Contact email *" name="email" type="email" required autoComplete="email" defaultValue={initialData?.email} />
+          <FormField
+            label="Title"
+            name="agent_title"
+            placeholder={isHost ? "e.g. Superhost" : "e.g. Realtor"}
+            defaultValue={initialData?.agent_title ?? ""}
+          />
+          <FormField
+            key={`brokerage-${profileType}`}
+            label={isHost ? "Business or property name" : "Brokerage"}
+            name="brokerage_name"
+            placeholder={isHost ? "e.g. Gulf Breeze Stays" : "e.g. Top Tier Realty"}
+            defaultValue={initialData?.brokerage_name ?? ""}
+          />
+          {isHost && (
+            <FormField
+              label="Booking link"
+              name="booking_url"
+              type="url"
+              placeholder="https://airbnb.com/rooms/…"
+              defaultValue={initialData?.booking_url ?? ""}
+            />
+          )}
           <FormField label="Website" name="website" placeholder="https://" defaultValue={initialData?.website ?? ""} />
-          <FormField label="Instagram Handle" name="instagram_handle" placeholder="@yourhandle" defaultValue={initialData?.instagram_handle ?? ""} />
+          <FormField label="Instagram handle" name="instagram_handle" placeholder="@yourhandle" defaultValue={initialData?.instagram_handle ?? ""} />
           <FormField label="Facebook URL" name="facebook_url" placeholder="https://facebook.com/..." defaultValue={initialData?.facebook_url ?? ""} />
         </div>
+        {!isHost && initialData?.booking_url ? (
+          <input type="hidden" name="booking_url" value={initialData.booking_url} />
+        ) : null}
       </section>
 
       {/* Tone */}
@@ -102,7 +162,7 @@ export function BrandProfileForm({
         <h2 className="text-lg font-semibold text-gray-900">Brand Voice</h2>
         <div>
           <label htmlFor="tone" className="block text-sm font-medium text-gray-700">
-            Tone *
+            Tone
           </label>
           <select
             id="tone"
@@ -122,10 +182,15 @@ export function BrandProfileForm({
 
       {/* Photos */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">Photos</h2>
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Photos (optional)</h2>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Without them, posts and reels use the name and brand colors instead.
+          </p>
+        </div>
         <div className="grid gap-6 sm:grid-cols-2">
           <ImageUpload
-            label="Headshot *"
+            label={isHost ? "Photo of you" : "Headshot"}
             name="headshot"
             bucket="brand-assets"
             storagePath={`${assetPrefix}/headshot`}
@@ -134,7 +199,7 @@ export function BrandProfileForm({
             onUploaded={handleHeadshotUploaded}
           />
           <ImageUpload
-            label="Logo *"
+            label="Logo"
             name="logo"
             bucket="brand-assets"
             storagePath={`${assetPrefix}/logo`}
@@ -153,21 +218,21 @@ export function BrandProfileForm({
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-4">
             <ColorPicker
-              label="Primary Color *"
+              label="Primary color"
               name="primary_color"
               value={primaryColor}
               required
               onChange={setPrimaryColor}
             />
             <ColorPicker
-              label="Secondary Color *"
+              label="Secondary color"
               name="secondary_color"
               value={secondaryColor}
               required
               onChange={setSecondaryColor}
             />
             <ColorPicker
-              label="Accent Color"
+              label="Accent color"
               name="accent_color"
               value={accentColor}
               onChange={setAccentColor}
@@ -184,7 +249,7 @@ export function BrandProfileForm({
 
       <SubmitButton pendingText={mode === "create" ? "Saving profile..." : "Updating profile..."}>
         {isAgent
-          ? mode === "create" ? "Save Agent" : "Update Agent"
+          ? mode === "create" ? "Save client" : "Update client"
           : mode === "create" ? "Save & Continue" : "Update Profile"}
       </SubmitButton>
     </form>

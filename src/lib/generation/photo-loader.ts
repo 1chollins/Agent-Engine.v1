@@ -49,8 +49,10 @@ export async function loadListingPhoto(
  * Loads the agent's headshot from brand-assets bucket.
  */
 export async function loadBrandAsset(
-  path: string
+  path: string | null | undefined
 ): Promise<{ base64: string; mimeType: string } | null> {
+  // Headshot and logo are optional on a profile.
+  if (!path) return null;
   return downloadAsBase64("brand-assets", path);
 }
 

@@ -8,6 +8,7 @@ import {
   FORMAT_ORDER,
   POST_TYPES,
   POST_TYPE_ORDER,
+  HOST_POST_TYPE_ORDER,
   type PostFormat,
   type PostTypeKey,
 } from "@/lib/studio-post-types";
@@ -88,15 +89,22 @@ export type InitialBrand = {
   socialHandle?: string;
   headshotUrl?: string | null;
   logoUrl?: string | null;
+  /** Airbnb-host accounts get the rental post types first. */
+  isHost?: boolean;
 };
 
 export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) {
+  const isHost = Boolean(initialBrand?.isHost);
+  const typeOrder = isHost
+    ? [...HOST_POST_TYPE_ORDER, ...POST_TYPE_ORDER.filter((k) => !HOST_POST_TYPE_ORDER.includes(k))]
+    : POST_TYPE_ORDER;
+  const firstType: PostTypeKey = isHost ? "now_booking" : "now_leasing";
   const exportRef = useRef<HTMLDivElement>(null);
   const colRef = useRef<HTMLDivElement>(null);
   const lookScrollRef = useRef<HTMLDivElement>(null);
   const [colW, setColW] = useState(440);
 
-  const [postType, setPostType] = useState<PostTypeKey>("now_leasing");
+  const [postType, setPostType] = useState<PostTypeKey>(firstType);
   const [format, setFormat] = useState<PostFormat>("square");
   const [template, setTemplate] = useState<PostTemplate>("overlay");
   const [headline, setHeadline] = useState("Brand-new pool homes in Cape Coral");
@@ -110,7 +118,7 @@ export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) 
   const [feature1, setFeature1] = useState("Cathedral ceilings");
   const [feature2, setFeature2] = useState("42″ cabinets + granite");
   const [feature3, setFeature3] = useState("Screened lanai");
-  const [cta, setCta] = useState(POST_TYPES.now_leasing.defaultCta);
+  const [cta, setCta] = useState(POST_TYPES[firstType].defaultCta);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [extraPhotos, setExtraPhotos] = useState<(string | null)[]>([null, null, null]);
   const [agentName, setAgentName] = useState("");
@@ -431,15 +439,17 @@ export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) 
 
     const weekPhotos = batchPhotos.slice(0, 7);
     const anchor = postType;
-    const weekTypes: PostTypeKey[] = [
-      anchor,
-      "recently_photographed",
-      "open_house",
-      anchor,
-      "agent_promo",
-      "recently_photographed",
-      anchor,
-    ];
+    const weekTypes: PostTypeKey[] = POST_TYPES[anchor].host
+      ? [anchor, "guest_favorite", "open_dates", anchor, "guest_favorite", "open_dates", anchor]
+      : [
+          anchor,
+          "recently_photographed",
+          "open_house",
+          anchor,
+          "agent_promo",
+          "recently_photographed",
+          anchor,
+        ];
 
     const original = {
       photoUrl,
@@ -881,7 +891,7 @@ export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) 
             onChange={(e) => handlePostTypeChange(e.target.value as PostTypeKey)}
             className="w-full rounded-lg border border-forest/25 bg-white/60 px-3 py-2.5 text-sm text-ink sm:hidden"
           >
-            {POST_TYPE_ORDER.map((key) => (
+            {typeOrder.map((key) => (
               <option key={key} value={key}>
                 {POST_TYPES[key].name}
               </option>
@@ -890,7 +900,7 @@ export function PostComposer({ initialBrand }: { initialBrand?: InitialBrand }) 
           {/* Desktop: full pill row */}
           <div className="hidden sm:block">
             <PillGroup>
-              {POST_TYPE_ORDER.map((key) => (
+              {typeOrder.map((key) => (
                 <Pill key={key} active={postType === key} onClick={() => handlePostTypeChange(key)}>
                   {POST_TYPES[key].name}
                 </Pill>

@@ -31,6 +31,10 @@ export const fourSceneStorySchema = z.object({
   address: z.string(),
   website: z.string().nullable(),
   seed: z.number(),
+  /** Overrides (optional, for host campaigns and blank facts). */
+  headline: z.string().optional(),
+  factsLine: z.string().optional(),
+  closingLine: z.string().optional(),
 });
 
 export type FourSceneStoryProps = z.infer<typeof fourSceneStorySchema>;
@@ -44,15 +48,18 @@ export const FourSceneStory: React.FC<FourSceneStoryProps> = ({
   address,
   website,
   seed,
+  headline,
+  factsLine,
+  closingLine,
 }) => {
   const sqftText = sqft ? ` · ${sqft.toLocaleString()} sqft` : "";
 
   // Mirrors the Text-1..Text-4 slots of the Creatomate template.
   const sceneTexts: string[] = [
-    `New Listing: ${city}`,
-    `${beds} bed · ${baths} bath${sqftText}`,
+    headline ?? `New Listing: ${city}`,
+    factsLine ?? `${beds} bed · ${baths} bath${sqftText}`,
     address,
-    website ?? "Link in bio for full tour",
+    website ?? closingLine ?? "Link in bio for full tour",
   ];
 
   return (

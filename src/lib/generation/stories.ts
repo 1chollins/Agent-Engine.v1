@@ -2,6 +2,14 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
+import {
+  audienceOf,
+  audienceRules,
+  AUDIENCE_COPY,
+  brandPromptDetails,
+  listingPromptDetails,
+  THEMES,
+} from "@/lib/audience";
 
 function getAnthropicClient() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -20,13 +28,6 @@ export type StoryTextResult = {
   hashtags: string;
 };
 
-const STORY_THEMES = [
-  "Sneak Peek — tease a standout feature to spark curiosity",
-  "Price Drop / Value Play — highlight the price and what you get",
-  "Neighborhood Spotlight — local dining, parks, schools, commute",
-  "Last Chance / Urgency — create FOMO, push to action",
-];
-
 export async function generateStoryText(
   listing: Listing,
   brand: BrandProfile,
@@ -35,11 +36,9 @@ export async function generateStoryText(
 ): Promise<StoryTextResult[]> {
   const supabase = createServiceClient();
 
-  const price = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(listing.price);
+  const audience = audienceOf(brand);
+  const copy = AUDIENCE_COPY[audience];
+  const themes = THEMES[audience].stories;
 
   const toneMap: Record<string, string> = {
     professional: "polished and authoritative",
@@ -49,24 +48,18 @@ export async function generateStoryText(
   };
 
   const themeList = storyDays
-    .map((day, i) => `- Day ${day}: "${STORY_THEMES[i % STORY_THEMES.length]}"`)
+    .map((day, i) => `- Day ${day}: "${themes[i % themes.length]}"`)
     .join("\n");
 
-  const prompt = `You are a real estate social media copywriter creating Instagram/Facebook Story content.
+  const prompt = `You are a ${copy.writer} creating Instagram/Facebook Story content.
 
 PROPERTY:
-- Address: ${listing.address}, ${listing.city}, ${listing.state} ${listing.zip_code}
-- Price: ${price}
-- Type: ${listing.property_type.replace("_", " ")}
-${listing.bedrooms ? `- Bedrooms: ${listing.bedrooms}` : ""}
-${listing.bathrooms ? `- Bathrooms: ${listing.bathrooms}` : ""}
-- Sqft: ${listing.sqft.toLocaleString()}
-- Features: ${listing.features}
-${listing.neighborhood ? `- Neighborhood: ${listing.neighborhood}` : ""}
+${listingPromptDetails(listing, audience)}
 
-AGENT: ${brand.agent_name}, ${brand.brokerage_name}
-${brand.instagram_handle ? `Instagram: ${brand.instagram_handle}` : ""}
-Phone: ${brand.phone}
+${brandPromptDetails(brand, audience)}
+
+RULES FOR THIS PROPERTY:
+${audienceRules(listing, audience)}
 
 TONE: ${toneMap[brand.tone] ?? "professional"}
 
@@ -75,7 +68,7 @@ ${themeList}
 
 For EACH story, provide:
 1. story_teaser: A punchy 1–2 line teaser for the story image overlay (under 15 words). Eye-catching, property-specific.
-2. story_cta: A short CTA text (e.g., "DM for details", "Link in bio", "Tap to learn more"). Include agent name or handle.
+2. story_cta: A short CTA text (e.g., ${audience === "host" ? '"Link in bio to book", "DM for dates", "Check availability"' : '"DM for details", "Link in bio", "Tap to learn more"'}). Include the ${copy.noun}'s name or handle.
 3. caption_instagram: Brief caption (20–40 words MAX) for the story post. Hook line + one detail + CTA, separated by line breaks. Never a dense paragraph.
 4. caption_facebook: Brief caption (25–50 words MAX) for Facebook. Same structure.
 5. hashtags: 10–15 relevant hashtags as a single space-separated string.

@@ -29,6 +29,10 @@ export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: 
   const [propertyType, setPropertyType] = useState(
     initialData?.property_type ?? "single_family"
   );
+  // Realtor or Airbnb host, from the profile this campaign is for.
+  const [profileId, setProfileId] = useState(defaultAgentId);
+  const isHost =
+    (agents.find((a) => a.id === profileId) ?? agents.find((a) => a.is_primary))?.profile_type === "host";
 
   // Bed and bath counts describe a home, not an office or a retail unit, so
   // the fields are hidden for anything that isn't lived in.
@@ -57,25 +61,35 @@ export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: 
       {agents.length > 1 && (
         <section className="space-y-2 rounded-xl border border-forest/20 bg-cream/40 p-4">
           <label htmlFor="brand_profile_id" className="block text-sm font-semibold text-black">
-            Agent *
+            Client *
           </label>
           <select
             id="brand_profile_id"
             name="brand_profile_id"
             required
-            defaultValue={defaultAgentId}
+            value={profileId}
+            onChange={(e) => setProfileId(e.target.value)}
             className="block w-full rounded-lg border border-sage bg-white px-3 py-2.5 text-sm shadow-sm focus:border-sage-darker focus:outline-none focus:ring-1 focus:ring-sage-darker"
           >
             {agents.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.is_primary ? `${a.agent_name} (you)` : `${a.agent_name} — ${a.brokerage_name}`}
+                {[
+                  a.is_primary ? `${a.agent_name} (you)` : a.agent_name,
+                  a.profile_type === "host" ? "Airbnb host" : "Realtor",
+                  a.is_primary ? null : a.brokerage_name,
+                ]
+                  .filter(Boolean)
+                  .join(" — ")}
               </option>
             ))}
           </select>
           <p className="text-xs text-gray-500">
-            Their headshot, name, brokerage and colors go on every post, reel and story.{" "}
+            {isHost
+              ? "A host campaign is written for guests: nightly rate, amenities, book your stay."
+              : "A realtor campaign sells the home: price, features, showings."}{" "}
+            Their name, contact and any photo, logo and colors go on every piece.{" "}
             <Link href="/agents/new" className="font-medium text-forest underline underline-offset-2">
-              Add an agent
+              Add a client
             </Link>
           </p>
         </section>
@@ -83,7 +97,11 @@ export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: 
 
       {/* Address Section */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-black">Property Address</h2>
+        <h2 className="text-lg font-semibold text-black">Property address</h2>
+        <p className="-mt-2 text-sm text-gray-500">
+          Only the address is required. Everything else is optional, but the more you add, the
+          more specific the captions get.
+        </p>
         <FormField
           label="Street Address *"
           name="address"
@@ -118,12 +136,11 @@ export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label htmlFor="property_type" className="block text-sm font-medium text-gray-700">
-              Property Type *
+              Property type
             </label>
             <select
               id="property_type"
               name="property_type"
-              required
               value={propertyType}
               onChange={(e) => setPropertyType(e.target.value as PropertyType)}
               className="block w-full rounded-lg border border-sage bg-white px-3 py-2.5 text-sm shadow-sm focus:border-sage-darker focus:outline-none focus:ring-1 focus:ring-sage-darker"
@@ -136,11 +153,11 @@ export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: 
             </select>
           </div>
           <FormField
-            label="Price *"
+            key={isHost ? "rate" : "price"}
+            label={isHost ? "Nightly rate" : "Price"}
             name="price"
             type="number"
-            required
-            placeholder="425000"
+            placeholder={isHost ? "189" : "425000"}
             defaultValue={initialData?.price?.toString()}
           />
         </div>
@@ -151,23 +168,30 @@ export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: 
           {showBedsBaths && (
             <>
               <FormField
-                label="Bedrooms *"
+                label="Bedrooms"
                 name="bedrooms"
                 type="number"
-                required
                 defaultValue={initialData?.bedrooms?.toString()}
               />
               <FormField
-                label="Bathrooms *"
+                label="Bathrooms"
                 name="bathrooms"
                 type="number"
-                required
                 placeholder="2.5"
                 defaultValue={initialData?.bathrooms?.toString()}
               />
             </>
           )}
-          {propertyClass !== "land" && (
+          {isHost && (
+            <FormField
+              label="Sleeps (guests)"
+              name="max_guests"
+              type="number"
+              placeholder="8"
+              defaultValue={initialData?.max_guests?.toString()}
+            />
+          )}
+          {!isHost && propertyClass !== "land" && (
             <FormField
               label="Year Built"
               name="year_built"
@@ -180,18 +204,19 @@ export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: 
 
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
-            label="Square Footage *"
+            label="Square footage"
             name="sqft"
             type="number"
-            required
             defaultValue={initialData?.sqft?.toString()}
           />
-          <FormField
-            label="Lot Size"
-            name="lot_size"
-            placeholder="0.25 acres"
-            defaultValue={initialData?.lot_size ?? ""}
-          />
+          {!isHost && (
+            <FormField
+              label="Lot size"
+              name="lot_size"
+              placeholder="0.25 acres"
+              defaultValue={initialData?.lot_size ?? ""}
+            />
+          )}
         </div>
       </section>
 
@@ -200,15 +225,18 @@ export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: 
         <h2 className="text-lg font-semibold text-black">Features & Description</h2>
         <div className="space-y-1.5">
           <label htmlFor="features" className="block text-sm font-medium text-gray-700">
-            Key Features *
+            {isHost ? "Amenities & highlights" : "Key features"}
           </label>
           <textarea
             id="features"
             name="features"
-            required
             rows={3}
-            placeholder="Pool, waterfront, renovated kitchen, impact windows..."
-            defaultValue={initialData?.features}
+            placeholder={
+              isHost
+                ? "Heated pool, hot tub, 5 min to the beach, game room, fast Wi-Fi..."
+                : "Pool, waterfront, renovated kitchen, impact windows..."
+            }
+            defaultValue={initialData?.features ?? ""}
             className="block w-full rounded-lg border border-sage bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-gray-400 focus:border-sage-darker focus:outline-none focus:ring-1 focus:ring-sage-darker"
           />
         </div>
@@ -218,12 +246,14 @@ export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: 
           placeholder="Community or neighborhood name"
           defaultValue={initialData?.neighborhood ?? ""}
         />
-        <FormField
-          label="HOA Information"
-          name="hoa_info"
-          placeholder="Monthly fee, amenities included..."
-          defaultValue={initialData?.hoa_info ?? ""}
-        />
+        {!isHost && (
+          <FormField
+            label="HOA information"
+            name="hoa_info"
+            placeholder="Monthly fee, amenities included..."
+            defaultValue={initialData?.hoa_info ?? ""}
+          />
+        )}
         <div className="space-y-1.5">
           <label htmlFor="additional_notes" className="block text-sm font-medium text-gray-700">
             Additional Notes
@@ -232,7 +262,11 @@ export function ListingDetailsForm({ mode, initialData, onSaved, agents = [] }: 
             id="additional_notes"
             name="additional_notes"
             rows={2}
-            placeholder="Extra selling points or notes for content generation..."
+            placeholder={
+              isHost
+                ? "What guests love, nearby spots, seasonal deals, minimum stay..."
+                : "Extra selling points or notes for content generation..."
+            }
             defaultValue={initialData?.additional_notes ?? ""}
             className="block w-full rounded-lg border border-sage bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-gray-400 focus:border-sage-darker focus:outline-none focus:ring-1 focus:ring-sage-darker"
           />

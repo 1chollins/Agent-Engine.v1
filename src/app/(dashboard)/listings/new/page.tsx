@@ -74,7 +74,7 @@ export default async function NewListingPage({ searchParams }: NewListingPagePro
 
   const { data: agentRows } = await supabase
     .from("brand_profiles")
-    .select("id, agent_name, brokerage_name, is_primary")
+    .select("id, agent_name, brokerage_name, profile_type, is_primary")
     .eq("user_id", user.id)
     .eq("is_complete", true)
     .order("is_primary", { ascending: false })

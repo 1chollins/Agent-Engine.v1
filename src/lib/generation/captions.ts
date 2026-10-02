@@ -3,6 +3,15 @@ import { createServiceClient } from "@/lib/supabase/server";
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
 import type { ContentType } from "@/types/content";
+import {
+  audienceOf,
+  audienceRules,
+  AUDIENCE_COPY,
+  brandPromptDetails,
+  cityTag,
+  listingPromptDetails,
+  THEMES,
+} from "@/lib/audience";
 
 function getAnthropicClient() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
@@ -35,47 +44,9 @@ const TONE_INSTRUCTIONS: Record<string, string> = {
   casual: "Write in a relaxed, down-to-earth tone. Use everyday language. Keep it real and relatable.",
 };
 
-const POST_THEMES = [
-  "Just Listed — grand reveal with key highlights",
-  "Lifestyle — paint a picture of daily life in this home",
-  "Feature Spotlight — deep dive into standout features",
-  "Neighborhood & Location — community, schools, dining, commute",
-  "Open House / Call to Action — urgency and next steps",
-];
-
-const REEL_THEMES = [
-  "Virtual Tour — walk-through energy, room-by-room highlights",
-  "Top 5 Features — countdown of best selling points",
-  "Day in the Life — morning-to-evening lifestyle at this property",
-  "Before You Miss It — urgency, scarcity, market context",
-  "Your Dream Home — emotional appeal, future-casting",
-];
-
 function buildListingContext(listing: Listing, brand: BrandProfile): string {
-  const price = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(listing.price);
-
-  const details = [
-    `Address: ${listing.address}, ${listing.city}, ${listing.state} ${listing.zip_code}`,
-    `Price: ${price}`,
-    `Property Type: ${listing.property_type.replace("_", " ")}`,
-    listing.bedrooms ? `Bedrooms: ${listing.bedrooms}` : null,
-    listing.bathrooms ? `Bathrooms: ${listing.bathrooms}` : null,
-    `Square Feet: ${listing.sqft.toLocaleString()}`,
-    listing.lot_size ? `Lot Size: ${listing.lot_size}` : null,
-    listing.year_built ? `Year Built: ${listing.year_built}` : null,
-    `Key Features: ${listing.features}`,
-    listing.neighborhood ? `Neighborhood: ${listing.neighborhood}` : null,
-    listing.hoa_info ? `HOA: ${listing.hoa_info}` : null,
-    listing.additional_notes ? `Notes: ${listing.additional_notes}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  return `PROPERTY DETAILS:\n${details}\n\nAGENT INFO:\nName: ${brand.agent_name}\nTitle: ${brand.agent_title}\nBrokerage: ${brand.brokerage_name}\nPhone: ${brand.phone}\nEmail: ${brand.email}${brand.instagram_handle ? `\nInstagram: ${brand.instagram_handle}` : ""}`;
+  const audience = audienceOf(brand);
+  return `PROPERTY DETAILS:\n${listingPromptDetails(listing, audience)}\n\n${brandPromptDetails(brand, audience)}\n\nRULES FOR THIS PROPERTY:\n${audienceRules(listing, audience)}`;
 }
 
 export type RedoCaptionResult = CaptionResult & {
@@ -115,13 +86,13 @@ export async function regeneratePieceCaptions(
     ? `,\n  "story_teaser": "<a punchy 4–8 word teaser overlay>",\n  "story_cta": "<a short call-to-action line>"`
     : "";
 
-  const prompt = `You are a real estate social media copywriter. REWRITE the captions for one ${piece.content_type} in a 14-day campaign.
+  const prompt = `You are a ${AUDIENCE_COPY[audienceOf(brand)].writer}. REWRITE the captions for one ${piece.content_type} in a 14-day campaign.
 
 ${context}
 
 TONE: ${toneGuide}
 
-THE AGENT'S DIRECTION FOR THIS REWRITE (top priority — follow it exactly):
+THE ${AUDIENCE_COPY[audienceOf(brand)].noun.toUpperCase()}'S DIRECTION FOR THIS REWRITE (top priority — follow it exactly):
 "${direction}"
 
 PREVIOUS VERSION (write something clearly different):
@@ -132,7 +103,7 @@ RULES:
 - BREVITY IS THE TOP PRIORITY. Instagram ${igRange} words MAX, Facebook ${fbRange} words MAX.
 - Structure: hook line of 8 words or fewer, then 2–3 short punchy lines with line breaks, then a one-line CTA mentioning ${brand.agent_name}. 1–2 emojis total.
 - 12–18 hashtags as a single space-separated string.
-- Apply the agent's direction above everything else.
+- Apply the direction above everything else, but never break the rules for this property.
 
 Respond in this exact JSON format (ONLY the JSON, no other text):
 {
@@ -180,6 +151,7 @@ export async function generateCaptionsBatch(
   const context = buildListingContext(listing, brand);
   const toneGuide = TONE_INSTRUCTIONS[brand.tone] ?? TONE_INSTRUCTIONS.professional;
 
+  const themes = THEMES[audienceOf(brand)];
   const posts = pieces.filter((p) => p.content_type === "post");
   const reels = pieces.filter((p) => p.content_type === "reel");
 
@@ -194,7 +166,7 @@ export async function generateCaptionsBatch(
       listing,
       posts,
       "post",
-      POST_THEMES,
+      themes.posts,
       listingId,
       supabase
     );
@@ -210,7 +182,7 @@ export async function generateCaptionsBatch(
       listing,
       reels,
       "reel",
-      REEL_THEMES,
+      themes.reels,
       listingId,
       supabase
     );
@@ -227,7 +199,7 @@ async function generateCaptionsForType(
   listing: Listing,
   pieces: { day_number: number; content_type: ContentType }[],
   type: "post" | "reel",
-  themes: string[],
+  themes: readonly string[],
   listingId: string,
   supabase: ReturnType<typeof createServiceClient>
 ): Promise<BatchCaptionResult[]> {
@@ -237,7 +209,14 @@ async function generateCaptionsForType(
     .map((p, i) => `- Day ${p.day_number}: Theme — "${themes[i % themes.length]}"`)
     .join("\n");
 
-  const prompt = `You are a real estate social media copywriter. Generate ${type} captions for a 14-day content calendar.
+  const audience = audienceOf(brand);
+  const city = cityTag(listing.city);
+  const hashtagHint =
+    audience === "host"
+      ? `#${city}VacationRental, #${city}Airbnb, destination and travel tags, amenity tags (pool, beach, etc.)`
+      : `#${city}RealEstate, #${city}Homes, location-specific tags, property feature tags, and general real estate tags`;
+
+  const prompt = `You are a ${AUDIENCE_COPY[audience].writer}. Generate ${type} captions for a 14-day content calendar.
 
 ${context}
 
@@ -249,14 +228,14 @@ ${themeList}
 For EACH ${type}, output:
 1. Instagram caption (${igRange} words MAX — social captions are skimmed, not read). Structure: a scroll-stopping hook line of 8 words or fewer, then 2–3 short punchy lines separated by line breaks, then a one-line call-to-action mentioning ${brand.agent_name}. 1–2 emojis total.
 2. Facebook caption (${fbRange} words MAX). Same structure, slightly more detail allowed. End with a one-line call-to-action.
-3. 12–18 hashtags including: #${listing.city.replace(/\s/g, "")}RealEstate, #${listing.city.replace(/\s/g, "")}Homes, location-specific tags, property feature tags, and general real estate tags.
+3. 12–18 hashtags including: ${hashtagHint}.
 
 RULES:
 - BREVITY IS THE TOP PRIORITY. Never write a dense paragraph. Short lines, line breaks between thoughts.
-- Pick ONE or TWO specific property details per caption (price, a feature, the neighborhood) — do not list everything
+- Pick ONE or TWO specific details per caption (a feature, the neighborhood, the price if given) — do not list everything
 - Each caption must be UNIQUE — different angle, different opening line, different CTA
 - Never start two captions the same way
-- Include the agent's contact info naturally in the CTA
+- Include the ${AUDIENCE_COPY[audience].noun}'s contact info (or booking link) naturally in the CTA
 - Hashtags should be a single string separated by spaces
 
 Respond in this exact JSON format:

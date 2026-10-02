@@ -18,13 +18,13 @@ export default async function NewAgentPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <Link href="/agents" className="text-sm text-gray-500 hover:text-black">
-        ← Agents
+        ← Clients
       </Link>
       <div className="mb-8 mt-3">
-        <h1 className="text-3xl font-bold text-gray-900">Add Agent</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Add client</h1>
         <p className="mt-3 text-gray-600">
-          The agent&apos;s branding for their campaigns: headshot, logo, colors, brokerage and
-          contact details. Their content shows this, not your studio profile.
+          A realtor or Airbnb host you make campaigns for. Their content carries their name and
+          contact details (and photo, logo and colors if you add them), not your studio profile.
         </p>
       </div>
       <BrandProfileForm mode="create" variant="agent" userId={user.id} profileId={profileId} />

@@ -1,6 +1,7 @@
 import type { Listing } from "@/types/listing";
 import type { BrandProfile } from "@/types/brand-profile";
-import { formatPrice, hexToRgba } from "../image-renderer";
+import { hexToRgba } from "../image-renderer";
+import { audienceOf, AUDIENCE_COPY, priceLabel, statLines } from "@/lib/audience";
 
 type PostTemplateProps = {
   listing: Listing;
@@ -18,14 +19,10 @@ export function buildPostTemplate(props: PostTemplateProps) {
   const width = isSquare ? 1080 : 1200;
   const height = isSquare ? 1080 : 630;
 
-  const price = formatPrice(listing.price);
-  const details = [
-    listing.bedrooms ? `${listing.bedrooms} Bed` : null,
-    listing.bathrooms ? `${listing.bathrooms} Bath` : null,
-    `${listing.sqft.toLocaleString()} Sqft`,
-  ]
-    .filter(Boolean)
-    .join("  •  ");
+  const audience = audienceOf(brand);
+  // No price given → the headline slot says "Just Listed" / "Now Booking".
+  const price = priceLabel(listing.price, audience) ?? AUDIENCE_COPY[audience].heroLabel;
+  const details = statLines(listing, audience).join("  •  ");
 
   const photoUrl = `data:${photoMimeType};base64,${photoBase64}`;
   const primaryBg = hexToRgba(brand.primary_color, 0.92);
@@ -234,7 +231,7 @@ export function buildPostTemplate(props: PostTemplateProps) {
                                 textOverflow: "ellipsis",
                                 maxWidth: width - (isSquare ? 160 : 130),
                               },
-                              children: `${brand.brokerage_name}  •  ${brand.phone}`,
+                              children: [brand.brokerage_name, brand.phone].filter(Boolean).join("  •  "),
                             },
                           },
                         ],

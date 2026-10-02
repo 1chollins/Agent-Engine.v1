@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getPropertyPageData } from "@/lib/property-page";
 import { LeadForm } from "@/components/property/lead-form";
 import { PROPERTY_TYPES } from "@/types/listing";
+import { audienceOf, priceLabel, statLines } from "@/lib/audience";
 
 type PageProps = { params: { slug: string } };
 
@@ -12,7 +13,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const data = await getPropertyPageData(params.slug);
   if (!data) return { title: "Property not found" };
   const { listing } = data;
-  const title = `${listing.address}, ${listing.city}, ${listing.state} — $${listing.price.toLocaleString()}`;
+  const price = priceLabel(listing.price, audienceOf(data.brand));
+  const title = [`${listing.address}, ${listing.city}, ${listing.state}`, price].filter(Boolean).join(" — ");
   return {
     title,
     description: listing.features?.slice(0, 160),
@@ -25,16 +27,17 @@ export default async function PropertyPage({ params }: PageProps) {
   if (!data) notFound();
 
   const { listing, brand, photos, reelUrl } = data;
+  const audience = audienceOf(brand);
+  const isHost = audience === "host";
+  const price = priceLabel(listing.price, audience);
   const hero = photos.find((p) => p.isHero) ?? photos[0];
   const gallery = photos.filter((p) => p !== hero).slice(0, 12);
   const propertyLabel =
     PROPERTY_TYPES.find((t) => t.value === listing.property_type)?.label ??
     listing.property_type;
   const specs = [
-    listing.bedrooms != null ? `${listing.bedrooms} Bed` : null,
-    listing.bathrooms != null ? `${listing.bathrooms} Bath` : null,
-    `${listing.sqft.toLocaleString()} Sqft`,
-    listing.year_built ? `Built ${listing.year_built}` : null,
+    ...statLines(listing, audience),
+    !isHost && listing.year_built ? `Built ${listing.year_built}` : null,
   ].filter(Boolean);
   const features = (listing.features ?? "")
     .split(/[,\n]/)
@@ -53,7 +56,7 @@ export default async function PropertyPage({ params }: PageProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-5xl px-5 pb-7">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
-            {propertyLabel} · For Sale
+            {[propertyLabel, isHost ? "Vacation rental" : "For Sale"].filter(Boolean).join(" · ")}
           </p>
           <h1 className="mt-1 text-3xl font-bold text-white sm:text-5xl">
             {listing.address}
@@ -61,9 +64,9 @@ export default async function PropertyPage({ params }: PageProps) {
           <p className="mt-1 text-lg text-white/90">
             {listing.city}, {listing.state} {listing.zip_code}
           </p>
-          <p className="mt-3 text-3xl font-bold text-white sm:text-4xl">
-            ${listing.price.toLocaleString()}
-          </p>
+          {price && (
+            <p className="mt-3 text-3xl font-bold text-white sm:text-4xl">{price}</p>
+          )}
         </div>
       </div>
 
@@ -152,15 +155,28 @@ export default async function PropertyPage({ params }: PageProps) {
                 )}
                 <div>
                   <p className="font-semibold">{brand.agent_name}</p>
-                  <p className="text-sm text-gray-500">
-                    {brand.agent_title} · {brand.brokerage_name}
-                  </p>
+                  {(brand.agent_title || brand.brokerage_name) && (
+                    <p className="text-sm text-gray-500">
+                      {[brand.agent_title, brand.brokerage_name].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
                   <p className="mt-0.5 text-sm text-gray-500">{brand.phone}</p>
                 </div>
               </div>
               <div className="my-5 h-px bg-black/10" />
+              {isHost && brand.booking_url && (
+                <a
+                  href={brand.booking_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mb-4 block rounded-lg px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: brand.primary_color }}
+                >
+                  Check dates &amp; book
+                </a>
+              )}
               <p className="mb-3 text-sm font-medium">
-                Interested in this property? Reach out:
+                {isHost ? "Questions about a stay? Message the host:" : "Interested in this property? Reach out:"}
               </p>
               <LeadForm
                 slug={params.slug}
